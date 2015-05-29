@@ -1,4 +1,4 @@
-package something;
+package mypackage;
 
 import java.io.*;
 
