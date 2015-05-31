@@ -5,7 +5,7 @@ import java.util.Stack;
 import org.jgrapht.*;
 import org.jgrapht.graph.*;
 
-public class Encode {
+public class Encode{
 	
 	/**
 	 * Construct the bitonic permutation from a number <code>w</code>
@@ -78,7 +78,7 @@ public class Encode {
 	 * @return The self-inverting permutation of <code>w</code> as per the algorithm of Chroni
 	 *         and Nikolopoulos. It is 0-indexed instead of 1-indexed to make calculations simpler.
 	 */
-	private static int[] encodeWToSIP(int w){
+	public static int[] encodeWToSIP(int w){
 		int[] bitonPerm = encodeWToBitonic(w);
 		int n = bitonPerm.length;
 		int i = 0;
@@ -104,34 +104,25 @@ public class Encode {
 	 * Encodes the self-inverting permutation <code>sip</code> as a reducible permutation graph.
 	 * @param sip The SIP to encode.
 	 * @return The reducible permutation graph of <code>sip</code> as per the algorithm of Chroni and
-	 *         Nikolopoulos. It is 1-indexed, as in the paper.
+	 *         Nikolopoulos. It is 0-indexed instead of 1-indexed to make calculations simpler.
 	 */
-	private static DirectedGraph<Integer,DefaultEdge> encodeSIPtoRPG(int[] sip){
+	public static DirectedGraph<Integer,DefaultEdge> encodeSIPtoRPG(int[] sip){
 		int[] p = calculateMaxDidom(sip);
 		int n = sip.length;
 		DirectedGraph<Integer,DefaultEdge> graph = new SimpleDirectedGraph<Integer,DefaultEdge>(DefaultEdge.class);
 		
-		// Create n+2 vertices from 0 to n+1
-		for (int i = 0; i <= n+1; i++){
+		// Create n+2 vertices from -1 to n
+		for (int i = -1; i <= n; i++){
 			graph.addVertex(new Integer(i));
 		}
 		// Create the list edges
-		for (int i = n+1; i > 0; i--){
+		for (int i = n; i > -1; i--){
 			graph.addEdge(new Integer(i), new Integer(i-1));
 		}
 		// Create the max-didomination-edges
 		for (int i = 0; i < n; i++){
-			graph.addEdge(new Integer(i+1), new Integer(p[i]+1));
+			graph.addEdge(new Integer(i), new Integer(p[i]));
 		}
 		return graph;
 	}
-
-	public static void main(String[] args) {
-		int w = Integer.parseInt(args[0]);
-		int[] sip = encodeWToSIP(w);
-		DirectedGraph<Integer,DefaultEdge> graph = encodeSIPtoRPG(sip);
-		//new GraphVisualizer(graph);
-		System.out.println(graph.toString());
-	}
-
 }

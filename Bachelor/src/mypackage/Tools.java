@@ -1,5 +1,7 @@
 package mypackage;
 
+import java.util.Collection;
+
 public class Tools {
 
 	/**
@@ -8,7 +10,7 @@ public class Tools {
 	 * @return The base-2 representation of <code>w</code>
 	 */
 	static int[] bitrep(int w){
-		int n = (int) Math.ceil(Math.log((double)w) / Math.log(2.0));
+		int n = (int) Math.floor(Math.log((double)w) / Math.log(2.0))+1;
 		int rest = w;
 		int[] result = new int[n];
 		for (int i = n-1;i>=0;i--){
@@ -49,6 +51,22 @@ public class Tools {
 		System.arraycopy(x,0,z,0,xLen);
 		System.arraycopy(y,0,z,xLen,yLen);
 		return z;
+	}
+	
+	/**
+	 * Simply finds the largest element in a collection.
+	 * @param <V> Type of the elements in <code>col</code>
+	 * @param col The collection to search through.
+	 * @return The largest element in <code>col</code>
+	 */
+	static <V extends Comparable<? super V>> V findLargest(Collection<V> col){
+		V largest = col.iterator().next();
+		for (V element : col){
+			if (element.compareTo(largest) > 0){
+				largest = element;
+			}
+		}
+		return largest;
 	}
 
 }

@@ -15,24 +15,30 @@ import org.jgrapht.*;
 import org.jgrapht.ext.JGraphModelAdapter;
 import org.jgrapht.graph.*;
 
-public class GraphVisualizer extends JFrame{
+/**
+ * Displays a graph in JGraph
+ * @author Kaspar
+ *
+ * @param <V> Type of the vertex in the graph. Must be comparable to position correctly.
+ */
+public class GraphVisualizer<V extends Comparable<? super V>> extends JFrame{
 	private static final long serialVersionUID = 1L;
 	private JGraph jgraph;
-	private DirectedGraph<Integer,DefaultEdge> g;
-	private JGraphModelAdapter<Integer, DefaultEdge> jgAdapter;
+	private DirectedGraph<V,DefaultEdge> g;
+	private JGraphModelAdapter<V, DefaultEdge> jgAdapter;
 	
 	/**
 	 * Constructs a window containing a JGraph for a given graph
 	 * @param g The <code>DirectedGraph</code> to display
 	 */
-	public GraphVisualizer(DirectedGraph<Integer,DefaultEdge> g){
+	public GraphVisualizer(DirectedGraph<V,DefaultEdge> g){
 		super("Graph Visualizer");
 		this.g = g;
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setLocationRelativeTo(null);
 		setVisible(true);
-		ListenableGraph<Integer,DefaultEdge> graph = new ListenableDirectedGraph<Integer,DefaultEdge>(g);
-		jgAdapter = new JGraphModelAdapter<Integer,DefaultEdge>(graph);
+		ListenableGraph<V,DefaultEdge> graph = new ListenableDirectedGraph<V,DefaultEdge>(g);
+		jgAdapter = new JGraphModelAdapter<V,DefaultEdge>(graph);
 		this.jgraph = new JGraph(jgAdapter);
 		getContentPane().add(jgraph);
 		positionVertices();
@@ -44,10 +50,10 @@ public class GraphVisualizer extends JFrame{
 	 * Positions the vertices of the graph in a linear fashion
 	 */
 	private void positionVertices(){
-		List<Integer> vertexList = new ArrayList<Integer>(g.vertexSet());
+		List<V> vertexList = new ArrayList<V>(g.vertexSet());
 		Collections.sort(vertexList);
 		int n = vertexList.size();
-		Integer vertex = vertexList.get(0);
+		V vertex = vertexList.get(0);
 		DefaultGraphCell cell = jgAdapter.getVertexCell(vertex);
 		AttributeMap attr = cell.getAttributes();
 		Rectangle2D bounds = GraphConstants.getBounds(attr);
