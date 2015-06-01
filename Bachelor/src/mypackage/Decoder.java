@@ -67,10 +67,98 @@ public class Decoder{
 	 * @return The SIP that is encoded in the given RPG. It is 0-indexed instead of 1-indexed.
 	 * @throws GraphStructureException If the graph is not a proper RPG.
 	 */
-	public List<Integer> decodeRPGToSIP() throws GraphStructureException{		
+	public int[] decodeRPGToSIP() throws GraphStructureException{		
 		List<Integer> preord = preorderTraversal(startNode,null);
 		preord.remove(0);
-		return preord;
+		int[] result = new int[preord.size()];
+		for (int i = 0; i < preord.size(); i++){
+			result[i] = preord.get(i).intValue();
+		}
+		return result;
+	}
+	
+	/**
+	 * Decodes a self-inverting permutation to the number that is encoded in that permutation.
+	 * @param sip Any self-inverting permutation.
+	 * @return The number that is encoded in <code>sip</code> per the algorithm of Chroni and Nikolopoulos
+	 * @throws Exception
+	 */
+	public int decodeSIPToW(int[] sip) throws Exception{
+		int[] bitonPerm = decodeSIPToBitonic(sip);
+		int length = bitonPerm.length;
+		int n = (length - 1)/2;
+		List<Integer> X = new ArrayList<Integer>();
+		int i = 0;
+		// Find the increasing subsequence X
+		while (bitonPerm[i] < bitonPerm[i+1]){
+			X.add(new Integer(bitonPerm[i]));
+			i++;
+			if (i == length - 1){
+				break;
+			}
+		}
+		X.add(new Integer(bitonPerm[i]));
+		i++;
+		// Decreasing subsequence Y
+		List<Integer> Y = Tools.arrayToList(bitonPerm, i, length-1);
+		int[] b = new int[length];
+		for (Integer x : X){
+			b[x.intValue()] = 1;
+		}
+		for (Integer y: Y){
+			b[y.intValue()] = 0;
+		}
+		int[] w = new int[n];
+		System.arraycopy(b, n, w, 0, n);
+		return Tools.bitrepToW(w);
+	}
+	
+	/**
+	 * Decodes a self-inverting permutation to the bitonic permutation it represents according to the
+	 * algorithm by Chroni and Nikolopoulos.
+	 * @param sip The self-inverting permutation that is to be decoded.
+	 * @return A bitonic permutation.
+	 * @throws Exception If the argument is not self-inverting.
+	 */
+	private int[] decodeSIPToBitonic(int[] sip) throws Exception{
+		int length = sip.length;
+		int element;
+		// Create the increasing cycle representation of sip
+		List<Cycle> cycles = new ArrayList<Cycle>();
+		List<Integer> visited = Tools.fillWithNegative(length);
+		Integer intElement;
+		for (int i = 0; i < length; i++){
+			element = sip[i];
+			intElement = new Integer(element);
+			if (sip[element] != i){
+				throw new Exception("Argument is not self-inverting");
+			}
+			// get is constant in time while contains is not
+			if (!visited.get(i).equals(new Integer(i))){
+				cycles.add(new Cycle(i,element));
+			}
+			visited.set(element, intElement);
+		}
+		// Sorting isn't necessary because the indices i are already increasing
+		int[] bitonPerm = new int[length];
+		int i = 0;
+		int j = length-1;
+		// Since removal does not run in linear time, we cannot go until cycles is empty
+		// This iteration does run in linear time, though
+		for (Cycle c : cycles){
+			if (c.x != c.y){
+				// c has length 2
+				bitonPerm[i] = c.y;
+				bitonPerm[j] = c.x;
+				i++;
+				j--;
+			} else {
+				// c has length 1
+				bitonPerm[i] = c.x;
+				i++;
+			}
+		}
+		return bitonPerm;
 	}
 	
 	/**

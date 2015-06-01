@@ -1,8 +1,6 @@
 package mypackage;
 
 import java.util.Arrays;
-import java.util.List;
-
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
@@ -19,17 +17,22 @@ public class Main {
 		} else {
 			w = Integer.parseInt(args[0]);
 		}
+		System.out.println("Our number is: "+w);
 		int[] sip = Encode.encodeWToSIP(w);
-		System.out.println(Arrays.toString(sip));
+		System.out.println("The SIP is:\n"+Arrays.toString(sip));
 		DirectedGraph<Integer, DefaultEdge> graph = Encode.encodeSIPtoRPG(sip);
 		//new GraphVisualizer(graph);
-		System.out.println(graph.toString());
+		System.out.println("The graph is:\n"+graph.toString()+"\n");
 		try {
+			System.out.println("Now for the decoding of the graph...");
 			Decoder decoder = new Decoder(graph);
-			List<Integer> derp = decoder.decodeRPGToSIP();
-			System.out.println(Arrays.toString(derp.toArray()));
-			System.out.println(""+decoder.decodeRPGBento());
-		} catch (GraphStructureException e) {
+			System.out.println("According to Bento, the number is: "+decoder.decodeRPGBento()+"\n");
+			
+			int[] sip2 = decoder.decodeRPGToSIP();
+			System.out.println("The decoding algorithm of Chroni and Nikolopoulos gives the SIP:\n"+Arrays.toString(sip2));
+			int w2 = decoder.decodeSIPToW(sip2);
+			System.out.println("Which decodes to: "+w2);
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

@@ -1,6 +1,8 @@
 package mypackage;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 public class Tools {
 
@@ -17,6 +19,30 @@ public class Tools {
 			result[i] = rest % 2;
 			rest = rest / 2;
 		}		
+		return result;
+	}
+	
+	/**
+	 * Calculates the number represented by the base-2 representation <code>b</code>.
+	 * @param b A base-2 representation of a number, i.e. it only consists of 0 and 1.
+	 * @return The number represented by <code>b</code>.
+	 */
+	static int bitrepToW(int[] b){
+		int result = 0;
+		int length = b.length;
+		for (int i = 0; i < length; i++){
+			if (b[i] == 1){
+				result = (int) (result + (Math.pow(2, length-i-1)));
+			}
+		}
+		return result;
+	}
+	
+	static List<Integer> fillWithNegative(int size){
+		List<Integer> result = new ArrayList<Integer>();
+		for (int i = 0; i < size; i++){
+			result.add(new Integer(-1));
+		}
 		return result;
 	}
 
@@ -67,6 +93,15 @@ public class Tools {
 			}
 		}
 		return largest;
+	}
+	
+	
+	static List<Integer> arrayToList(int[] array, int startIndex, int endIndex){
+		List<Integer> result = new ArrayList<Integer>();
+		for (int i = startIndex; i < endIndex; i++){
+			result.add(new Integer(array[i]));
+		}
+		return result;
 	}
 
 }
