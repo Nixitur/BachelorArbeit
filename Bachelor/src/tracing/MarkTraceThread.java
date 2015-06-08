@@ -39,7 +39,7 @@ public class MarkTraceThread extends QueueThread {
 				List<Value> values = thisFrame.getArgumentValues();
 				Method caller = loc.method();
 				System.out.println("---Entry "+caller.name()+"---");	
-				System.out.println("---Line: "+loc.lineNumber()+"---");
+				System.out.println("---Line: "+loc.codeIndex()+"---");
 				System.out.println(Arrays.toString(values.toArray()));
 				Value val = null;
 				if (!values.isEmpty()){

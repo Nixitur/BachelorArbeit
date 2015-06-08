@@ -17,12 +17,16 @@ public class TracePoint {
 	}
 	
 	@Override
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
 	public String toString(){
 		String valToString = "null";
 		if (!(val == null)){
 			valToString = val.toString();
 		}
-		String result = "("+valToString+"|"+loc.lineNumber()+"|"+method.name()+")";
+		String result = "("+method.name()+"|"+loc.codeIndex()+"|"+valToString+")";
 		return result.toString();
 	}
 }
