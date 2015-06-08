@@ -1,4 +1,4 @@
-package mypackage;
+package encoding;
 
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;

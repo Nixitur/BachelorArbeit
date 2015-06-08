@@ -1,4 +1,4 @@
-package mypackage;
+package encoding;
 
 /**
  * Instances of this class are a representation of a 1- or 2-cycle in a permutation.

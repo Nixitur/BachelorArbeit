@@ -1,4 +1,4 @@
-package mypackage;
+package encoding;
 
 import java.util.ArrayList;
 import java.util.Collections;

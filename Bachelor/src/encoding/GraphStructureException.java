@@ -1,4 +1,4 @@
-package mypackage;
+package encoding;
 
 public class GraphStructureException extends Exception {
 	private static final long serialVersionUID = 1L;
