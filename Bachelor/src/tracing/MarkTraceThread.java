@@ -37,15 +37,16 @@ public class MarkTraceThread extends QueueThread {
 				StackFrame callerFrame = mEnE.thread().frame(1);			
 				Location loc = callerFrame.location();
 				List<Value> values = thisFrame.getArgumentValues();
-				Method caller = loc.method();
-				System.out.println("---Entry "+caller.name()+"---");	
-				System.out.println("---Line: "+loc.codeIndex()+"---");
-				System.out.println(Arrays.toString(values.toArray()));
 				Value val = null;
 				if (!values.isEmpty()){
 					val = values.get(0);
 				}
-				tracePoints.add(new TracePoint(caller, loc, val));
+				TracePoint tracePoint = new TracePoint(loc, val);				
+				System.out.println("---Entry "+loc.method().name()+"---");	
+				System.out.println("---Line: "+loc.codeIndex()+"---");
+				System.out.println(Arrays.toString(values.toArray()));
+				tracePoints.add(tracePoint);
+				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -55,7 +56,11 @@ public class MarkTraceThread extends QueueThread {
 
 	@Override
 	void processDisconnected() {
-		System.out.println(Arrays.toString(tracePoints.toArray()));
+		//System.out.println(Arrays.toString(tracePoints.toArray()));
+	}
+	
+	public List<TracePoint> getTracePoints(){
+		return tracePoints;
 	}
 
 }

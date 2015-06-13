@@ -14,8 +14,10 @@ import com.sun.jdi.connect.VMStartException;
 public class VMLauncher {
 	
 	VirtualMachine vm;
+	MarkTraceThread mtt;
 	private String[] excludes = {"java.*", "javax.*", "sun.*", "com.sun.*", "org.jpgrapht.graph.*",
-			"org.jgrapht.*", "java.nio.*", "oracle.*", "org.objectweb.asm.*", "javax.swing.*"};
+			"org.jgrapht.*", "java.nio.*", "oracle.*", "org.objectweb.asm.*", "javax.swing.*",
+			"jdk.internal.org.*"};
 
 	public VMLauncher(String[] args) {
 		StringBuffer classAndArgs = new StringBuffer(args[0]);
@@ -25,7 +27,7 @@ public class VMLauncher {
 		}
 		String classAndArgsS = classAndArgs.toString();
 		vm = launchVM(classAndArgsS);
-		MarkTraceThread mtt = new MarkTraceThread(vm, excludes);
+		mtt = new MarkTraceThread(vm, excludes);
 		mtt.start();
 		vm.resume();
 	}
@@ -94,5 +96,9 @@ public class VMLauncher {
         } catch (VMStartException e) {
             throw new Error("Target VM failed to initialize: "+ e.getMessage());
         }
+	}
+	
+	public MarkTraceThread getTraceThread(){
+		return mtt;
 	}
 }
