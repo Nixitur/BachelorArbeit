@@ -5,6 +5,8 @@ import java.util.Collection;
 import java.util.List;
 
 public class Tools {
+	
+	private Tools(){}
 
 	/**
 	 * Creates the bit-representation of the natural number <code>w</code>

@@ -14,16 +14,6 @@ public class TracePoint {
 		this.val = val;
 	}
 	
-	public String methodSig() {
-		Method method = loc.method();
-		String className = method.declaringType().signature();
-		// The declaring type is always "L" followed by the class name and ending with ";"
-		className = className.substring(1, className.length()-1);
-		// This signature has the same format as it is found as a "Methodref" in the constant pool in the class' Bytecode  
-		String signature = className + "." + method.name() + ":" + method.signature();
-		return signature;
-	}
-	
 	@Override
 	/*
 	 * (non-Javadoc)
@@ -34,7 +24,7 @@ public class TracePoint {
 		if (!(val == null)){
 			valToString = val.toString();
 		}
-		String signature = methodSig();
+		String signature = embedding.Tools.methodSig(loc);
 		String result = "("+signature+"|"+loc.codeIndex()+"|"+valToString+")";
 		return result.toString();
 	}
