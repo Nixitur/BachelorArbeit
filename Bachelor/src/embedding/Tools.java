@@ -1,6 +1,7 @@
 package embedding;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.sun.jdi.Method;
@@ -70,19 +71,31 @@ public class Tools {
 			n = length;
 		}
 		List<List<Integer>> result = new ArrayList<List<Integer>>();
+		// length of one slice
 		int m = length / n;
+		// how many need to be overfilled
+		int p = length % n;
+		int pTracker = 1;
 		List<Integer> list;
-		int index = 0;
+		int index = length-1;
 		for (int i = 0; i < n; i++){
+			if (i >= p){
+				pTracker = 0;
+			}
 			list = new ArrayList<Integer>();
-			for (int j = 0; j < m; j++){
+			for (int j = 0; j < m+pTracker; j++){
 				list.add(path.get(index));
-				index++;
+				index--;
 			}
 			result.add(list);
 		}
-		for (int i = index; i < length; i++){
-			result.get(n-1).add(path.get(i));
+		list = result.get(n-1);
+		for (int i = index; i >= 0; i--){
+			list.add(path.get(i));
+		}
+		for (int i = 0; i < n; i++){
+			list = result.get(i);
+			Collections.reverse(list);
 		}
 		return result;
 	}

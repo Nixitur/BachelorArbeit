@@ -1,42 +1,55 @@
 package embedding;
 
 import org.apache.bcel.generic.*;
-import org.apache.bcel.classfile.*;
 import org.apache.bcel.*;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
-import java.util.ArrayList;
+import encoding.Encode;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 public class WatermarkCreator implements Constants {
-	private final String		ARRAY_NAME = "array";
-	private final String		E1_NAME = "e1";
-	private final String		E2_NAME = "e2";
-	private final ObjectType 	NODE_TYPE;
-	private final String		CLASS_NAME;	
-	private InstructionFactory 	_factory;
-	private ConstantPoolGen 	_cp;
-	private ClassGen 			_cg;
-	private DirectedGraph<Integer,DefaultEdge> _graph;
-	private int					_noOfVertices;
-	private List<List<Integer>> _splitNodes;
-	private HashMap<Integer,Integer> remainingNeighbors;
+	private static final String 	CLASS_NAME = "Watermark";
+	private static final String		ARRAY_NAME = "array";
+	private static final String		E1_NAME = "e1";
+	private static final String		E2_NAME = "e2";
+	private final ObjectType 		_nodeType;
+	private final String			_fullClassName;	
+	private final InstructionFactory _factory;
+	private final ConstantPoolGen 	_cp;
+	private final ClassGen 			_cg;
+	private final DirectedGraph<Integer,DefaultEdge> _graph;
+	private final int				_noOfVertices;
+	private final List<List<Integer>> _splitNodes;
+	private final HashMap<Integer,Integer> remainingNeighbors;
 	
 	public WatermarkCreator(String packageName, DirectedGraph<Integer,DefaultEdge> graph, int noOfSubgraphs) {
-		CLASS_NAME = packageName+".Watermark";
-		_cg = new ClassGen(CLASS_NAME, "java.lang.Object", "Watermark.java", ACC_PUBLIC | ACC_SUPER, new String[] {  });
+		_fullClassName = packageName+"."+CLASS_NAME;
+		_cg = new ClassGen(_fullClassName, "java.lang.Object", CLASS_NAME+".java", ACC_PUBLIC | ACC_SUPER, new String[] {  });
 		_cp = _cg.getConstantPool();
 		_factory = new InstructionFactory(_cg,_cp);
 		_graph = graph;
 		int n = graph.vertexSet().size();
 		List<Integer> hamiltonPath = encoding.Tools.hamiltonPath(n);
 		_splitNodes = Tools.splitNodes(hamiltonPath, noOfSubgraphs);
-		NODE_TYPE = new ObjectType(CLASS_NAME);
+		_nodeType = new ObjectType(_fullClassName);
 		_noOfVertices = n;
 		remainingNeighbors = noOfNeighbors();
+	}
+	
+	public void create(OutputStream out) throws IOException{
+		createFields();
+		createConstructor();
+		for (int i = 0; i < _splitNodes.size(); i++){
+			createBuildGi(i);
+		}
+		_cg.getJavaClass().dump(out);
 	}
 	
 	/**
@@ -66,7 +79,20 @@ public class WatermarkCreator implements Constants {
 	 * @return The very same instruction.
 	 */
 	private FieldInstruction getArray(){
-		return _factory.createFieldAccess(CLASS_NAME, ARRAY_NAME, new ArrayType(NODE_TYPE, 1), GETSTATIC);
+		return _factory.createFieldAccess(_fullClassName, ARRAY_NAME, new ArrayType(_nodeType, 1), GETSTATIC);
+	}
+	
+	/**
+	 * Creates a new Watermark instance and pushes it on the stack, ready to be stored.
+	 * @param il
+	 */
+	private void createNewNode(InstructionList il){
+		// create a brand new node and push it on stack
+		il.append(_factory.createNew(_fullClassName));
+		// duplicate the object on the stack
+		il.append(InstructionConstants.DUP);
+		// pop one from the stack and invoke constructor on it 
+		il.append(_factory.createInvoke(_fullClassName, "<init>", Type.VOID, Type.NO_ARGS, INVOKESPECIAL));
 	}
 	
 	/**
@@ -86,9 +112,9 @@ public class WatermarkCreator implements Constants {
 			InstructionList il){
 		int sourceIndex = vertexToVarIndex.get(sourceVertex).intValue();
 		int targetIndex = vertexToVarIndex.get(targetVertex).intValue();
-		il.append(_factory.createLoad(Type.OBJECT, sourceIndex));
-		il.append(_factory.createLoad(Type.OBJECT, targetIndex));
-		il.append(_factory.createFieldAccess(CLASS_NAME, E1_NAME, NODE_TYPE, PUTFIELD));
+		il.append(InstructionFactory.createLoad(Type.OBJECT, sourceIndex));
+		il.append(InstructionFactory.createLoad(Type.OBJECT, targetIndex));
+		il.append(_factory.createFieldAccess(_fullClassName, fieldName, _nodeType, PUTFIELD));
 		// reduce the count of how many neighbors are remaining for both nodes
 		reduceRemainingNeighbors(sourceVertex,targetVertex);
 	}
@@ -101,14 +127,9 @@ public class WatermarkCreator implements Constants {
 	 */
 	private void createGiNodes(List<Integer> nodes, InstructionList il, VertexToVarIndexMap vertexToVarIndex){
 		for (int j = 0; j < nodes.size(); j++){
-			// create a brand new node and push it on stack
-			InstructionHandle createNewNode = il.append(_factory.createNew(CLASS_NAME));
-			// duplicate the object on the stack
-			il.append(InstructionConstants.DUP);
-			// pop one from the stack and invoke constructor on it 
-			il.append(_factory.createInvoke(CLASS_NAME, "<init>", Type.VOID, Type.NO_ARGS, INVOKESPECIAL));
-			// pop the other one and store it in local variable j+1 (or just j if this is G_0)
-			il.append(_factory.createStore(Type.OBJECT, vertexToVarIndex.getLocalVarIndex()));
+			createNewNode(il);
+			// pop node from stack and store it in local variable
+			il.append(InstructionFactory.createStore(Type.OBJECT, vertexToVarIndex.getLocalVarIndex()));
 			vertexToVarIndex.put(nodes.get(j));
 		}
 	}
@@ -120,36 +141,74 @@ public class WatermarkCreator implements Constants {
 	 * @param vertexToVarIndex
 	 */
 	private void createTreeNeighbors(TreeNeighborMap treeNeighbors, InstructionList il, VertexToVarIndexMap vertexToVarIndex){
-		Integer outNeighbor;
+		List<Integer> inNeighbors;
 		for (Integer vertex : treeNeighbors.keySet()){
-			outNeighbor = treeNeighbors.get(vertex);
-			// if this vertex hasn't been stored yet
-			if (vertexToVarIndex.get(outNeighbor) == null){
-				// push array on stack
-				il.append(getArray());
-				// push desired index on stack
-				il.append(new PUSH(_cp, outNeighbor.intValue()));
-				// load array[index] and push it on stack
-				il.append(InstructionConstants.AALOAD);
-				// and store it in local variable
-				il.append(_factory.createStore(Type.OBJECT, vertexToVarIndex.getLocalVarIndex()));
-				vertexToVarIndex.put(outNeighbor);
+			// Get all inNeighbors via tree edges of vertex
+			inNeighbors = treeNeighbors.get(vertex);
+			for (Integer inNeighbor : inNeighbors){
+				// if this inNeighbor of vertex hasn't been stored yet
+				if (vertexToVarIndex.get(inNeighbor) == null){
+					// push array on stack
+					il.append(getArray());
+					// push desired index on stack
+					il.append(new PUSH(_cp, inNeighbor.intValue()));
+					// load array[index] and push it on stack
+					il.append(InstructionConstants.AALOAD);
+					// and store it in local variable
+					il.append(InstructionFactory.createStore(Type.OBJECT, vertexToVarIndex.getLocalVarIndex()));
+					vertexToVarIndex.put(inNeighbor);
+				}
 			}
 		}
 	}
 	
+	/**
+	 * Creates code that checks whether <code>array</code> is null. If it is, a new array is built and filled with
+	 * new Watermarks.
+	 * @param il
+	 */
 	private void createCheckIfArrayNull(InstructionList il){
 		// push array on stack
 		il.append(getArray());
 		// check if top of stack is not null; if so, go to an as of yet undetermined (null) instruction
-		BranchInstruction ifArrayNonNull = _factory.createBranchInstruction(IFNONNULL, null);
+		BranchInstruction ifArrayNonNull = InstructionFactory.createBranchInstruction(IFNONNULL, null);
 		il.append(ifArrayNonNull);
 		// push the number of vertices on the stack
-		InstructionHandle pushN = il.append(new PUSH(_cp, _noOfVertices));
+		il.append(new PUSH(_cp, _noOfVertices-1));
 		// push new array (with 1 dimension and length on top of stack) on stack
-		il.append(_factory.createNewArray(NODE_TYPE, (short) 1));
+		il.append(_factory.createNewArray(_nodeType, (short) 1));
 		// take what is on top of the stack and save it as the field ARRAY_NAME
-		il.append(_factory.createFieldAccess(CLASS_NAME, ARRAY_NAME, new ArrayType(NODE_TYPE,1), PUTSTATIC));
+		il.append(_factory.createFieldAccess(_fullClassName, ARRAY_NAME, new ArrayType(_nodeType,1), PUTSTATIC));
+		
+		// -- Start of the for-loop --
+		// Push 0 on stack
+		il.append(new PUSH(_cp, 0));
+		// store 0 in local variable 0
+		il.append(InstructionFactory.createStore(Type.INT, 0));
+		
+		// -- The for-loop itself --
+		BranchInstruction gotoCheckInFor = InstructionFactory.createBranchInstruction(Constants.GOTO, null);
+		il.append(gotoCheckInFor);
+		// push array on stack		
+		InstructionHandle getArrayInstruction = il.append(getArray());
+		// push local variable 0 on stack
+		il.append(InstructionFactory.createLoad(Type.INT, 0));
+		// create a new node and push it on stack
+		createNewNode(il);
+		// store node at index in array
+		il.append(InstructionConstants.AASTORE);
+		// increment local variable 0 by 1
+		il.append(new IINC(0,1));
+		
+		// -- The check in the for-loop --
+		// push local variable 0 on stack
+		InstructionHandle startOfCheck = il.append(InstructionFactory.createLoad(Type.INT, 0));
+		// push highest allowed index of array on stack 
+		il.append(new PUSH(_cp, _noOfVertices-1));
+		// if counter smaller than the number of vertices -1, go back to the for loop		
+		BranchInstruction ifVarSmallerThan = InstructionFactory.createBranchInstruction(Constants.IF_ICMPLT, getArrayInstruction);
+		il.append(ifVarSmallerThan);
+		gotoCheckInFor.setTarget(startOfCheck);
 		
 		// Just wait for a bit
 		InstructionHandle nop = il.append(InstructionConstants.NOP);
@@ -160,26 +219,27 @@ public class WatermarkCreator implements Constants {
 	private void createFields(){
 		FieldGen field;
 		
-		field = new FieldGen(ACC_PUBLIC, NODE_TYPE, E1_NAME, _cp);
+		field = new FieldGen(ACC_PUBLIC, _nodeType, E1_NAME, _cp);
 		_cg.addField(field.getField());
 		
-		field = new FieldGen(ACC_PUBLIC, NODE_TYPE, E2_NAME, _cp);
+		field = new FieldGen(ACC_PUBLIC, _nodeType, E2_NAME, _cp);
 		_cg.addField(field.getField());
 		
-		field = new FieldGen(ACC_PUBLIC | ACC_STATIC, new ArrayType(NODE_TYPE, 1), ARRAY_NAME, _cp);
+		field = new FieldGen(ACC_PUBLIC | ACC_STATIC, new ArrayType(_nodeType, 1), ARRAY_NAME, _cp);
 		_cg.addField(field.getField());
 	}
 	
 	private void createConstructor(){
 		InstructionList il = new InstructionList();
 		// Constructor is public, has no return type, no arguments, is called <init> and is in Watermark
-		MethodGen method = new MethodGen(ACC_PUBLIC, Type.VOID, Type.NO_ARGS, new String[] {}, "<init>", CLASS_NAME, il, _cp);
+		MethodGen method = new MethodGen(ACC_PUBLIC, Type.VOID, Type.NO_ARGS, new String[] {}, "<init>", _fullClassName, il, _cp);
 		
-		// Push the name of Object class on stack
-		InstructionHandle loadObjectClass = il.append(_factory.createLoad(Type.OBJECT, 0));
-		// Invoke <init> on class that is on the stack
+		// push the name of Object class on stack
+		il.append(InstructionFactory.createLoad(Type.OBJECT, 0));
+		// invoke <init> on class that is on the stack
 		il.append(_factory.createInvoke("java.lang.Object", "<init>", Type.VOID, Type.NO_ARGS, INVOKESPECIAL));
-		InstructionHandle returnInstruction = il.append(_factory.createReturn(Type.VOID));
+		// return from the methd
+		il.append(InstructionFactory.createReturn(Type.VOID));
 		method.setMaxStack();
 		method.setMaxLocals();
 		_cg.addMethod(method.getMethod());
@@ -188,13 +248,16 @@ public class WatermarkCreator implements Constants {
 	
 	private void createBuildGi(int i){
 		List<Integer> nodes = _splitNodes.get(i);
-		Integer lastOfPrevious = null;
-		if (i > 0){
-			lastOfPrevious = nodes.get(0)+1;
+		boolean thisIsG0 = (i == 0);
+		Integer lastNodeInGi = nodes.get(nodes.size()-1);
+		Integer firstNodeInPrevious = null;
+		// if this is not G0, the leftmost subgraph with the smallest indices
+		if (!thisIsG0){
+			firstNodeInPrevious = lastNodeInGi-1;
 		}
 		
 		InstructionList il = new InstructionList();
-		MethodGen method = new MethodGen(ACC_PUBLIC | ACC_STATIC, Type.VOID, Type.NO_ARGS, new String[] {}, "buildG"+i, CLASS_NAME, il, _cp);
+		MethodGen method = new MethodGen(ACC_PUBLIC | ACC_STATIC, Type.VOID, Type.NO_ARGS, new String[] {}, "buildG"+i, _fullClassName, il, _cp);
 		
 		createCheckIfArrayNull(il);
 		
@@ -202,16 +265,16 @@ public class WatermarkCreator implements Constants {
 		VertexToVarIndexMap vertexToVarIndex = new VertexToVarIndexMap();
 
 		// If this is not G_0
-		if (lastOfPrevious != null){
+		if (!thisIsG0){
 			// push array on stack
 			il.append(getArray());
 			// put desired index on stack
-			il.append(new PUSH(_cp, lastOfPrevious.intValue()));
+			il.append(new PUSH(_cp, firstNodeInPrevious.intValue()));
 			// load array[index] and push it on stack
 			il.append(InstructionConstants.AALOAD);
 			// and store it in local variable 0
-			il.append(_factory.createStore(Type.OBJECT, 0));
-			vertexToVarIndex.put(lastOfPrevious);
+			il.append(InstructionFactory.createStore(Type.OBJECT, 0));
+			vertexToVarIndex.put(firstNodeInPrevious);
 		}
 		
 		// Create the Nodes of G_i
@@ -225,24 +288,13 @@ public class WatermarkCreator implements Constants {
 		
 		Integer sourceVertex;
 		Integer targetVertex;
-		int sourceIndex;
 		
-		if (lastOfPrevious != null){
-			// create list edge from last slice to this one
-			sourceVertex = lastOfPrevious;
-			sourceIndex = vertexToVarIndex.get(sourceVertex);
-			targetVertex = nodes.get(0);
-			
-			// load last node of previous slice and push it on stack
-			il.append(_factory.createLoad(Type.OBJECT, sourceIndex));
-			// pop the node; if this node doesn't exist, branch
-			BranchInstruction ifLastOfPreviousNull = _factory.createBranchInstruction(IFNULL, null);
-			il.append(ifLastOfPreviousNull);
+		// create list edge from last slice to this one
+		if (!thisIsG0){
+			sourceVertex = lastNodeInGi;
+			targetVertex = firstNodeInPrevious;
 			
 			createEdge(sourceVertex, targetVertex, E1_NAME, vertexToVarIndex, il);
-			
-			InstructionHandle nop2 = il.append(InstructionConstants.NOP);
-			ifLastOfPreviousNull.setTarget(nop2);
 		}
 
 		// Create all the list edges
@@ -255,12 +307,68 @@ public class WatermarkCreator implements Constants {
 		
 		// Create all the tree edges
 		for (int j = 0; j < nodes.size(); j++){
-			sourceVertex = nodes.get(j);
-			targetVertex = treeNeighbors.get(sourceVertex);
-			
-			createEdge(sourceVertex, targetVertex, E2_NAME, vertexToVarIndex, il);
+			// get the target node in nodes
+			targetVertex = nodes.get(j);
+			// go through all its inNeighbors via tree edges
+			for (Integer vertex : treeNeighbors.get(targetVertex)){
+				sourceVertex = vertex;
+				createEdge(sourceVertex, targetVertex, E2_NAME, vertexToVarIndex, il);
+			}
 		}
 		
-		//TODO: remove unnecessary vertices from array, push necessary ones on array
+		// Go through all vertices except for vertex -1
+		Integer index;
+		for (Integer j = 0; j < _noOfVertices - 1; j++){
+			// if that vertex is actually used in this method, get its index
+			if((index = vertexToVarIndex.get(j)) != null){
+				// push array on stack
+				il.append(getArray());
+				// push desired array index on stack
+				il.append(new PUSH(_cp, j.intValue()));
+				// If it still has neighbors remaining, e.g. if it still needs to be dealt with
+				if(remainingNeighbors.get(j) > 0){					
+					// push object to be stored on stack
+					il.append(InstructionFactory.createLoad(Type.OBJECT, index));
+				} else {
+					// push new node on stack
+					createNewNode(il);					
+				}
+				// store local var or new Watermark in array at index j
+				il.append(InstructionConstants.AASTORE);
+			}
+		}
+		il.append(InstructionFactory.createReturn(Type.VOID));
+		method.setMaxStack();
+		method.setMaxLocals();
+		_cg.addMethod(method.getMethod());
+		il.dispose();		
+	}
+	
+	public static void main(String[] args){
+		int w = 5;
+		int k = 3;
+		if (args.length > 0) {
+			w = Integer.parseInt(args[0]);
+			if (args.length > 1) {
+				k = Integer.parseInt(args[1]);
+			}
+		}
+		int[] sip = Encode.encodeWToSIP(w);
+		DirectedGraph<Integer, DefaultEdge> graph = Encode.encodeSIPtoRPG(sip);
+		
+		String packageName = "example";
+		WatermarkCreator creator = new WatermarkCreator(packageName, graph, k);
+		String fullClassName = creator._fullClassName;
+		int cutOff = fullClassName.lastIndexOf('.');
+		
+		String separator = File.separator;
+		String className = CLASS_NAME;
+		packageName = packageName.replace('.', separator.charAt(0));
+		try {
+			creator.create(new FileOutputStream(packageName+separator+className+".class"));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

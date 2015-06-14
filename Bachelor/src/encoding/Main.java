@@ -4,12 +4,7 @@ import java.util.Arrays;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
-public class Main {
-
-	public Main() {
-		// TODO Auto-generated constructor stub
-	}
-	
+public class Main {	
 	public static void main(String[] args){
 		int w;
 		if (args.length == 0){
