@@ -106,4 +106,17 @@ public class Tools {
 		return result;
 	}
 
+	/**
+	 * Returns the hamiltonian path of an RPG with <code>n</code> vertices. It's simply a list from n-2 to -1.
+	 * @param n The number of vertices.
+	 * @return A list of <code>Integer</code> objects going from n-2 to 1.
+	 */
+	public static List<Integer> hamiltonPath(int n){
+		List<Integer> result = new ArrayList<Integer>();
+		for (int i = n-2; i >= -1; i--){
+			result.add(new Integer(i));
+		}
+		return result;
+	}
+
 }
