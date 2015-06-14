@@ -8,6 +8,7 @@ import java.util.List;
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
+import org.apache.bcel.util.BCELifier;
 
 import com.sun.jdi.Location;
 
@@ -37,9 +38,6 @@ public class ClassExecutor {
 		locToFile = getFileNames();
 		fileToClass = getClasses();
 		locToBCELMethod = getMethods();
-		for (Location loc : locToBCELMethod.keySet()){
-			System.out.println(Tools.methodSig(loc)+"\n   :"+locToBCELMethod.get(loc).toString());
-		}
 	}
 	
 	private List<TracePoint> runClassFile(String[] args){
@@ -120,7 +118,15 @@ public class ClassExecutor {
 	}
 	
 	public static void main(String[] args){
-		new ClassExecutor(args);		
+		new ClassExecutor(args);
+//		try {
+//			ClassParser parser = new ClassParser("example/Nodexample.class");
+//			JavaClass clazz = parser.parse();
+//			BCELifier bcel = new BCELifier(clazz,System.out);
+//			bcel.start();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
 	}
 
 }

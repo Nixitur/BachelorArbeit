@@ -1,5 +1,8 @@
 package embedding;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.sun.jdi.Method;
 import com.sun.jdi.ReferenceType;
 
@@ -57,6 +60,51 @@ public class Tools {
 		String name = method.getName();
 		String sig = method.getSignature();
 		return (className+"."+name+":"+sig);
+	}
+	
+	public static List<List<Integer>> splitNodes(List<Integer> hamiltonPath, int n){
+		// Copy hamiltonPath so as to not overwrite it
+		List<Integer> path = new ArrayList<Integer>(hamiltonPath);
+		int length = path.size();
+		if (n > length){
+			n = length;
+		}
+		List<List<Integer>> result = new ArrayList<List<Integer>>();
+		int m = length / n;
+		List<Integer> list;
+		int index = 0;
+		for (int i = 0; i < n; i++){
+			list = new ArrayList<Integer>();
+			for (int j = 0; j < m; j++){
+				list.add(path.get(index));
+				index++;
+			}
+			result.add(list);
+		}
+		for (int i = index; i < length; i++){
+			result.get(n-1).add(path.get(i));
+		}
+		return result;
+	}
+	
+	public static <S> String listListToString(List<List<S>> list){
+		StringBuffer buf = new StringBuffer();
+		List<S> sublist;
+		buf.append('[');		
+		for (int i = 0; i < list.size(); i++){
+			sublist = list.get(i);
+			buf.append('[');
+			for (int j = 0; j < sublist.size(); j++){
+				buf.append(sublist.get(j).toString());
+				buf.append(", ");
+			}
+			buf.setLength(buf.length()-2);
+			buf.append(']');
+			buf.append(", ");
+		}
+		buf.setLength(buf.length()-2);
+		buf.append(']');
+		return buf.toString();
 	}
 
 }
