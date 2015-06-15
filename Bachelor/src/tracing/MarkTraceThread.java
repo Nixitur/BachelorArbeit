@@ -2,6 +2,7 @@ package tracing;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 
 import com.sun.jdi.IntegerValue;
@@ -16,14 +17,16 @@ import com.sun.jdi.event.MethodEntryEvent;
 
 public class MarkTraceThread extends QueueThread {
 	
-	List<TracePoint> tracePoints;
+	// We use LinkedHashSet because we do not want duplicate TracePoints, but still want an order
+	// I declare it as such because the iteration order being the insertion order is actually important
+	LinkedHashSet<TracePoint> tracePoints;
 	VirtualMachine vm;
 	
 
 	public MarkTraceThread(VirtualMachine vm, String[] excludes) {
 		super(vm, excludes);
 		this.vm = vm;
-		tracePoints = new ArrayList<TracePoint>();
+		tracePoints = new LinkedHashSet<TracePoint>();
 	}
 
 	@Override
@@ -63,7 +66,6 @@ public class MarkTraceThread extends QueueThread {
 				tracePoints.add(tracePoint);
 				
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -75,7 +77,7 @@ public class MarkTraceThread extends QueueThread {
 	}
 	
 	public List<TracePoint> getTracePoints(){
-		return tracePoints;
+		return new ArrayList<TracePoint>(tracePoints);
 	}
 
 }

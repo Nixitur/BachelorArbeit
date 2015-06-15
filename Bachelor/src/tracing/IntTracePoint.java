@@ -31,6 +31,7 @@ public class IntTracePoint extends TracePoint {
 	 */
 	@Override
 	public boolean equals(Object obj) {
+		// This works because equals on IntegerValue is defined as equality of the mirrored value
 		if (this == obj)
 			return true;
 		if (obj == null)

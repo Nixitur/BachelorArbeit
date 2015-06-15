@@ -31,6 +31,7 @@ public class StringTracePoint extends TracePoint {
 	 */
 	@Override
 	public boolean equals(Object obj) {
+		// This works because I specifically compare the mirrored Strings
 		if (this == obj)
 			return true;
 		if (obj == null)
