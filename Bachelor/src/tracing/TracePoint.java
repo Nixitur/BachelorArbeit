@@ -1,10 +1,9 @@
 package tracing;
 
 import com.sun.jdi.Location;
-import com.sun.jdi.Method;
 import com.sun.jdi.Value;
 
-public class TracePoint {
+public abstract class TracePoint {
 	
 	private Location loc;
 	private Value val;
@@ -28,10 +27,6 @@ public class TracePoint {
 		String result = "("+signature+"|"+loc.codeIndex()+"|"+valToString+")";
 		return result.toString();
 	}
-	
-	public boolean sameLoc(TracePoint t){
-		return (loc.equals(t.getLoc()));
-	}
 
 	public Location getLoc() {
 		return loc;
@@ -40,4 +35,18 @@ public class TracePoint {
 	public Value getVal() {
 		return val;
 	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public abstract int hashCode();
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public abstract boolean equals(Object obj);
+	
+	
 }

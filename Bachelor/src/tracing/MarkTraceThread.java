@@ -4,9 +4,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.sun.jdi.IntegerValue;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.StackFrame;
+import com.sun.jdi.StringReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.event.Event;
@@ -40,8 +42,21 @@ public class MarkTraceThread extends QueueThread {
 				Value val = null;
 				if (!values.isEmpty()){
 					val = values.get(0);
+				} else if (values.size() > 1){
+					throw new UnsupportedArgumentException("Calls to mark may only either "
+							+ "have no argument or one argument of type int or String");
 				}
-				TracePoint tracePoint = new TracePoint(loc, val);				
+				TracePoint tracePoint;
+				if (val == null){
+					tracePoint = new NoArgTracePoint(loc);
+				} else if (val instanceof IntegerValue){
+					tracePoint = new IntTracePoint(loc,(IntegerValue) val);
+				} else if (val instanceof StringReference){
+					tracePoint = new StringTracePoint(loc,(StringReference) val);
+				} else {
+					throw new UnsupportedArgumentException("Calls to mark may only either "
+							+ "have no argument or one argument of type int or String");
+				}
 				System.out.println("---Entry "+loc.method().name()+"---");	
 				System.out.println("---Line: "+loc.codeIndex()+"---");
 				System.out.println(Arrays.toString(values.toArray()));

@@ -1,6 +1,7 @@
 package embedding;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -26,6 +27,7 @@ public class ClassExecutor {
 	private HashMap<String,JavaClass> fileToClass;
 	private HashMap<Location,String> locToFile;
 	private HashMap<Location,Method> locToBCELMethod;
+	private HashMap<Location,List<TracePoint>> locToTracePoint;
 
 	/**
 	 * Constructs a new ClassExecutor 
@@ -38,6 +40,7 @@ public class ClassExecutor {
 		locToFile = getFileNames();
 		fileToClass = getClasses();
 		locToBCELMethod = getMethods();
+		locToTracePoint = getLocToTracePoints();
 	}
 	
 	private List<TracePoint> runClassFile(String[] args){
@@ -54,11 +57,13 @@ public class ClassExecutor {
 		MarkTraceThread mtt = vmLauncher.getTraceThread();
 		
 		// Wait until the debuggee is done
-		while (vmLauncher.getTraceThread().isAlive()){
+		while (mtt.isAlive()){
 			
 		}
 		return mtt.getTracePoints();
 	}
+	
+	
 	
 	private org.apache.bcel.classfile.Method findMethod(JavaClass clazz, com.sun.jdi.Location loc){
 		String wantedSig = Tools.methodSig(loc);
@@ -113,6 +118,22 @@ public class ClassExecutor {
 			file = locToFile.get(loc);
 			Method method = this.findMethod(fileToClass.get(file), loc);
 			result.put(loc, method);
+		}
+		return result;
+	}
+	
+	private HashMap<Location,List<TracePoint>> getLocToTracePoints(){
+		HashMap<Location,List<TracePoint>> result = new HashMap<Location,List<TracePoint>>();
+		Location loc;
+		List<TracePoint> list;
+		for (TracePoint tracePoint : tracePoints){
+			loc = tracePoint.getLoc();
+			list = result.get(loc);
+			if (list == null){
+				list = new ArrayList<TracePoint>();
+				result.put(loc, list);
+			}
+			list.add(tracePoint);
 		}
 		return result;
 	}

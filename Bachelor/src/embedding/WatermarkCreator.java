@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 
 public class WatermarkCreator implements Constants {
-	private static final String 	CLASS_NAME = "Watermark";
+	public static final String 		CLASS_NAME = "Watermark";
 	private static final String		ARRAY_NAME = "array";
 	private static final String		E1_NAME = "e1";
 	private static final String		E2_NAME = "e2";
@@ -338,6 +338,7 @@ public class WatermarkCreator implements Constants {
 			}
 		}
 		il.append(InstructionFactory.createReturn(Type.VOID));
+		method.removeNOPs();
 		method.setMaxStack();
 		method.setMaxLocals();
 		_cg.addMethod(method.getMethod());
