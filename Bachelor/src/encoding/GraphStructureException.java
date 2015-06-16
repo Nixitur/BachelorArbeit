@@ -1,5 +1,10 @@
 package encoding;
 
+/**
+ * An exception solely for the case that a graph is not what it should be.
+ * @author Kaspar
+ *
+ */
 public class GraphStructureException extends Exception {
 	private static final long serialVersionUID = 1L;
 

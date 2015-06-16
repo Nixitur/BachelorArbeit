@@ -4,7 +4,17 @@ import java.util.Arrays;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
-public class Main {	
+/**
+ * This class is just for demonstrating en- and decoding.
+ * @author Kaspar
+ *
+ */
+public class Main {
+	/**
+	 * No creation of instances necessary or desirable.
+	 */
+	private Main(){}
+	
 	public static void main(String[] args){
 		int w;
 		if (args.length == 0){

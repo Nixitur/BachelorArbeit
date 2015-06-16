@@ -5,7 +5,18 @@ import java.util.Stack;
 import org.jgrapht.*;
 import org.jgrapht.graph.*;
 
+/**
+ * This class provides methods to encode a natural <code>int</code> to a reducible permutation graph as per the algorithm of Chroni
+ * and Nikolopoulos.
+ * @author Kaspar
+ *
+ */
 public class Encode{
+	/**
+	 * No creation of instances necessary or desirable.
+	 */
+	private Encode(){}
+	
 	/**
 	 * Construct the bitonic permutation from a number <code>w</code>
 	 * @param w Any natural number

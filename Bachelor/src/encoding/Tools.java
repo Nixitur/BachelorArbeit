@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-public class Tools {
-	
+public class Tools {	
+	/**
+	 * No creation of instances necessary or desirable.
+	 */
 	private Tools(){}
 
 	/**

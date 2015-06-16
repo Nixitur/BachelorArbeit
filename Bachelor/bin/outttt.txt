@@ -1,0 +1,342 @@
+package example;
+
+import org.apache.bcel.generic.*;
+import org.apache.bcel.classfile.*;
+import org.apache.bcel.*;
+import java.io.*;
+
+public class NodexampleCreator implements Constants {
+  private InstructionFactory _factory;
+  private ConstantPoolGen    _cp;
+  private ClassGen           _cg;
+
+  public NodexampleCreator() {
+    _cg = new ClassGen("example.Nodexample", "java.lang.Object", "Nodexample.java", ACC_PUBLIC | ACC_SUPER, new String[] {  });
+
+    _cp = _cg.getConstantPool();
+    _factory = new InstructionFactory(_cg, _cp);
+  }
+
+  public void create(OutputStream out) throws IOException {
+    createFields();
+    createMethod_0();
+    createMethod_1();
+    createMethod_2();
+    createMethod_3();
+    createMethod_4();
+    _cg.getJavaClass().dump(out);
+  }
+
+  private void createFields() {
+    FieldGen field;
+
+    field = new FieldGen(ACC_PUBLIC, new ObjectType("example.Nodexample"), "e1", _cp);
+    _cg.addField(field.getField());
+
+    field = new FieldGen(ACC_PUBLIC, new ObjectType("example.Nodexample"), "e2", _cp);
+    _cg.addField(field.getField());
+
+    field = new FieldGen(ACC_PUBLIC | ACC_STATIC, new ArrayType(new ObjectType("example.Nodexample"), 1), "array", _cp);
+    _cg.addField(field.getField());
+  }
+
+  private void createMethod_0() {
+    InstructionList il = new InstructionList();
+    MethodGen method = new MethodGen(ACC_PUBLIC, Type.VOID, Type.NO_ARGS, new String[] {  }, "<init>", "example.Nodexample", il, _cp);
+
+    InstructionHandle ih_0 = il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(_factory.createInvoke("java.lang.Object", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    InstructionHandle ih_4 = il.append(_factory.createReturn(Type.VOID));
+    method.setMaxStack();
+    method.setMaxLocals();
+    _cg.addMethod(method.getMethod());
+    il.dispose();
+  }
+
+  private void createMethod_1() {
+    InstructionList il = new InstructionList();
+    MethodGen method = new MethodGen(ACC_PUBLIC | ACC_STATIC, Type.VOID, Type.NO_ARGS, new String[] {  }, "buildG0", "example.Nodexample", il, _cp);
+
+    InstructionHandle ih_0 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+        BranchInstruction ifnonnull_3 = _factory.createBranchInstruction(Constants.IFNONNULL, null);
+    il.append(ifnonnull_3);
+    InstructionHandle ih_6 = il.append(new PUSH(_cp, 8));
+    il.append(_factory.createNewArray(new ObjectType("example.Nodexample"), (short) 1));
+    il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.PUTSTATIC));
+    InstructionHandle ih_14 = il.append(_factory.createNew("example.Nodexample"));
+    il.append(InstructionConstants.DUP);
+    il.append(_factory.createInvoke("example.Nodexample", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    il.append(_factory.createStore(Type.OBJECT, 0));
+    InstructionHandle ih_22 = il.append(_factory.createNew("example.Nodexample"));
+    il.append(InstructionConstants.DUP);
+    il.append(_factory.createInvoke("example.Nodexample", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    il.append(_factory.createStore(Type.OBJECT, 1));
+    InstructionHandle ih_30 = il.append(_factory.createNew("example.Nodexample"));
+    il.append(InstructionConstants.DUP);
+    il.append(_factory.createInvoke("example.Nodexample", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    il.append(_factory.createStore(Type.OBJECT, 2));
+    InstructionHandle ih_38 = il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e1", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_43 = il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createLoad(Type.OBJECT, 2));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e1", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_48 = il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e2", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_53 = il.append(_factory.createLoad(Type.OBJECT, 2));
+    il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e2", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_58 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 7));
+    il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(InstructionConstants.AASTORE);
+    InstructionHandle ih_65 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 6));
+    il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(InstructionConstants.AASTORE);
+    InstructionHandle ih_72 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 5));
+    il.append(_factory.createLoad(Type.OBJECT, 2));
+    il.append(InstructionConstants.AASTORE);
+    InstructionHandle ih_78 = il.append(_factory.createReturn(Type.VOID));
+    ifnonnull_3.setTarget(ih_14);
+    method.setMaxStack();
+    method.setMaxLocals();
+    _cg.addMethod(method.getMethod());
+    il.dispose();
+  }
+
+  private void createMethod_2() {
+    InstructionList il = new InstructionList();
+    MethodGen method = new MethodGen(ACC_PUBLIC | ACC_STATIC, Type.VOID, Type.NO_ARGS, new String[] {  }, "buildG1", "example.Nodexample", il, _cp);
+
+    InstructionHandle ih_0 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+        BranchInstruction ifnonnull_3 = _factory.createBranchInstruction(Constants.IFNONNULL, null);
+    il.append(ifnonnull_3);
+    InstructionHandle ih_6 = il.append(new PUSH(_cp, 8));
+    il.append(_factory.createNewArray(new ObjectType("example.Nodexample"), (short) 1));
+    il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.PUTSTATIC));
+    InstructionHandle ih_14 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 5));
+    il.append(InstructionConstants.AALOAD);
+    il.append(_factory.createStore(Type.OBJECT, 0));
+    InstructionHandle ih_20 = il.append(_factory.createNew("example.Nodexample"));
+    il.append(InstructionConstants.DUP);
+    il.append(_factory.createInvoke("example.Nodexample", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    il.append(_factory.createStore(Type.OBJECT, 1));
+    InstructionHandle ih_28 = il.append(_factory.createNew("example.Nodexample"));
+    il.append(InstructionConstants.DUP);
+    il.append(_factory.createInvoke("example.Nodexample", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    il.append(_factory.createStore(Type.OBJECT, 2));
+    InstructionHandle ih_36 = il.append(_factory.createNew("example.Nodexample"));
+    il.append(InstructionConstants.DUP);
+    il.append(_factory.createInvoke("example.Nodexample", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    il.append(_factory.createStore(Type.OBJECT, 3));
+
+
+    InstructionHandle ih_44 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 7));
+    il.append(InstructionConstants.AALOAD);
+    il.append(_factory.createStore(Type.OBJECT, 4));
+    InstructionHandle ih_52 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 6));
+    il.append(InstructionConstants.AALOAD);
+    il.append(_factory.createStore(Type.OBJECT, 5));
+
+
+    InstructionHandle ih_60 = il.append(_factory.createLoad(Type.OBJECT, 0));
+        BranchInstruction ifnull_61 = _factory.createBranchInstruction(Constants.IFNULL, null);
+    il.append(ifnull_61);
+    InstructionHandle ih_64 = il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e1", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+
+
+
+    InstructionHandle ih_69 = il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createLoad(Type.OBJECT, 2));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e1", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+
+    InstructionHandle ih_74 = il.append(_factory.createLoad(Type.OBJECT, 2));
+    il.append(_factory.createLoad(Type.OBJECT, 3));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e1", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+
+
+
+    InstructionHandle ih_79 = il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createLoad(Type.OBJECT, 5));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e2", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_85 = il.append(_factory.createLoad(Type.OBJECT, 2));
+    il.append(_factory.createLoad(Type.OBJECT, 4));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e2", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_91 = il.append(_factory.createLoad(Type.OBJECT, 3));
+    il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e2", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_96 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 5));
+    il.append(InstructionConstants.ACONST_NULL);
+    il.append(InstructionConstants.AASTORE);
+    InstructionHandle ih_102 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 4));
+    il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(InstructionConstants.AASTORE);
+    InstructionHandle ih_108 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 2));
+    il.append(_factory.createLoad(Type.OBJECT, 3));
+    il.append(InstructionConstants.AASTORE);
+    InstructionHandle ih_114 = il.append(_factory.createReturn(Type.VOID));
+    ifnonnull_3.setTarget(ih_14);
+    ifnull_61.setTarget(ih_69);
+    method.setMaxStack();
+    method.setMaxLocals();
+    _cg.addMethod(method.getMethod());
+    il.dispose();
+  }
+
+  private void createMethod_3() {
+    InstructionList il = new InstructionList();
+    MethodGen method = new MethodGen(ACC_PUBLIC | ACC_STATIC, Type.VOID, Type.NO_ARGS, new String[] {  }, "buildG2", "example.Nodexample", il, _cp);
+
+    InstructionHandle ih_0 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+        BranchInstruction ifnonnull_3 = _factory.createBranchInstruction(Constants.IFNONNULL, null);
+    il.append(ifnonnull_3);
+    InstructionHandle ih_6 = il.append(new PUSH(_cp, 8));
+    il.append(_factory.createNewArray(new ObjectType("example.Nodexample"), (short) 1));
+    il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.PUTSTATIC));
+    InstructionHandle ih_14 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 2));
+    il.append(InstructionConstants.AALOAD);
+    il.append(_factory.createStore(Type.OBJECT, 0));
+    InstructionHandle ih_20 = il.append(_factory.createNew("example.Nodexample"));
+    il.append(InstructionConstants.DUP);
+    il.append(_factory.createInvoke("example.Nodexample", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    il.append(_factory.createStore(Type.OBJECT, 1));
+    InstructionHandle ih_28 = il.append(_factory.createNew("example.Nodexample"));
+    il.append(InstructionConstants.DUP);
+    il.append(_factory.createInvoke("example.Nodexample", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    il.append(_factory.createStore(Type.OBJECT, 2));
+    InstructionHandle ih_36 = il.append(_factory.createNew("example.Nodexample"));
+    il.append(InstructionConstants.DUP);
+    il.append(_factory.createInvoke("example.Nodexample", "<init>", Type.VOID, Type.NO_ARGS, Constants.INVOKESPECIAL));
+    il.append(_factory.createStore(Type.OBJECT, 3));
+    InstructionHandle ih_44 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 4));
+    il.append(InstructionConstants.AALOAD);
+    il.append(_factory.createStore(Type.OBJECT, 4));
+    InstructionHandle ih_51 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 6));
+    il.append(InstructionConstants.AALOAD);
+    il.append(_factory.createStore(Type.OBJECT, 5));
+    InstructionHandle ih_59 = il.append(_factory.createLoad(Type.OBJECT, 0));
+        BranchInstruction ifnull_60 = _factory.createBranchInstruction(Constants.IFNULL, null);
+    il.append(ifnull_60);
+    InstructionHandle ih_63 = il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e1", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_68 = il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createLoad(Type.OBJECT, 2));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e1", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_73 = il.append(_factory.createLoad(Type.OBJECT, 2));
+    il.append(_factory.createLoad(Type.OBJECT, 3));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e1", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_78 = il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createLoad(Type.OBJECT, 4));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e2", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_84 = il.append(_factory.createLoad(Type.OBJECT, 2));
+    il.append(_factory.createLoad(Type.OBJECT, 5));
+    il.append(_factory.createFieldAccess("example.Nodexample", "e2", new ObjectType("example.Nodexample"), Constants.PUTFIELD));
+    InstructionHandle ih_90 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 2));
+    il.append(InstructionConstants.ACONST_NULL);
+    il.append(InstructionConstants.AASTORE);
+    InstructionHandle ih_96 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 4));
+    il.append(InstructionConstants.ACONST_NULL);
+    il.append(InstructionConstants.AASTORE);
+    InstructionHandle ih_102 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(new PUSH(_cp, 6));
+    il.append(InstructionConstants.ACONST_NULL);
+    il.append(InstructionConstants.AASTORE);
+    InstructionHandle ih_109 = il.append(_factory.createReturn(Type.VOID));
+    ifnonnull_3.setTarget(ih_14);
+    ifnull_60.setTarget(ih_68);
+    method.setMaxStack();
+    method.setMaxLocals();
+    _cg.addMethod(method.getMethod());
+    il.dispose();
+  }
+
+  private void createMethod_4() {
+    InstructionList il = new InstructionList();
+    MethodGen method = new MethodGen(ACC_PUBLIC | ACC_STATIC, Type.VOID, new Type[] { new ArrayType(Type.STRING, 1) }, new String[] { "arg0" }, "main", "example.Nodexample", il, _cp);
+
+    InstructionHandle ih_0 = il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(InstructionConstants.ARRAYLENGTH);
+    il.append(new PUSH(_cp, 1));
+        BranchInstruction if_icmplt_3 = _factory.createBranchInstruction(Constants.IF_ICMPLT, null);
+    il.append(if_icmplt_3);
+    il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(new PUSH(_cp, 0));
+    il.append(InstructionConstants.AALOAD);
+    il.append(_factory.createInvoke("java.lang.String", "length", Type.INT, Type.NO_ARGS, Constants.INVOKEVIRTUAL));
+    il.append(new PUSH(_cp, 3));
+        BranchInstruction if_icmpge_13 = _factory.createBranchInstruction(Constants.IF_ICMPGE, null);
+    il.append(if_icmpge_13);
+    InstructionHandle ih_16 = il.append(new PUSH(_cp, "012"));
+    il.append(_factory.createStore(Type.OBJECT, 1));
+    InstructionHandle ih_19;
+    BranchInstruction goto_19 = _factory.createBranchInstruction(Constants.GOTO, null);
+    ih_19 = il.append(goto_19);
+    InstructionHandle ih_22 = il.append(_factory.createLoad(Type.OBJECT, 0));
+    il.append(new PUSH(_cp, 0));
+    il.append(InstructionConstants.AALOAD);
+    il.append(_factory.createStore(Type.OBJECT, 1));
+    InstructionHandle ih_26 = il.append(new PUSH(_cp, 0));
+    il.append(_factory.createStore(Type.INT, 2));
+    InstructionHandle ih_28;
+    BranchInstruction goto_28 = _factory.createBranchInstruction(Constants.GOTO, null);
+    ih_28 = il.append(goto_28);
+    InstructionHandle ih_31 = il.append(_factory.createLoad(Type.OBJECT, 1));
+    il.append(_factory.createLoad(Type.INT, 2));
+    il.append(_factory.createInvoke("java.lang.String", "charAt", Type.CHAR, new Type[] { Type.INT }, Constants.INVOKEVIRTUAL));
+    Select tableswitch_36 = new TABLESWITCH(new int[] { 48, 49, 50 }, new InstructionHandle[] { null, null, null }, null);
+    il.append(tableswitch_36);
+    InstructionHandle ih_64 = il.append(_factory.createInvoke("example.Nodexample", "buildG0", Type.VOID, Type.NO_ARGS, Constants.INVOKESTATIC));
+    InstructionHandle ih_67;
+    BranchInstruction goto_67 = _factory.createBranchInstruction(Constants.GOTO, null);
+    ih_67 = il.append(goto_67);
+    InstructionHandle ih_70 = il.append(_factory.createInvoke("example.Nodexample", "buildG1", Type.VOID, Type.NO_ARGS, Constants.INVOKESTATIC));
+    InstructionHandle ih_73;
+    BranchInstruction goto_73 = _factory.createBranchInstruction(Constants.GOTO, null);
+    ih_73 = il.append(goto_73);
+    InstructionHandle ih_76 = il.append(_factory.createInvoke("example.Nodexample", "buildG2", Type.VOID, Type.NO_ARGS, Constants.INVOKESTATIC));
+    InstructionHandle ih_79 = il.append(new IINC(2, 1));
+    InstructionHandle ih_82 = il.append(_factory.createLoad(Type.INT, 2));
+    il.append(new PUSH(_cp, 3));
+        BranchInstruction if_icmplt_84 = _factory.createBranchInstruction(Constants.IF_ICMPLT, ih_31);
+    il.append(if_icmplt_84);
+    InstructionHandle ih_87 = il.append(_factory.createFieldAccess("example.Nodexample", "array", new ArrayType(new ObjectType("example.Nodexample"), 1), Constants.GETSTATIC));
+    il.append(_factory.createStore(Type.OBJECT, 2));
+    InstructionHandle ih_91 = il.append(_factory.createReturn(Type.VOID));
+    if_icmplt_3.setTarget(ih_16);
+    if_icmpge_13.setTarget(ih_22);
+    goto_19.setTarget(ih_26);
+    goto_28.setTarget(ih_82);
+    tableswitch_36.setTarget(ih_79);
+    tableswitch_36.setTarget(0, ih_64);
+    tableswitch_36.setTarget(1, ih_70);
+    tableswitch_36.setTarget(2, ih_76);
+    goto_67.setTarget(ih_79);
+    goto_73.setTarget(ih_79);
+    method.setMaxStack();
+    method.setMaxLocals();
+    _cg.addMethod(method.getMethod());
+    il.dispose();
+  }
+
+  public static void main(String[] args) throws Exception {
+    example.NodexampleCreator creator = new example.NodexampleCreator();
+    creator.create(new FileOutputStream("example.Nodexample.class"));
+  }
+}

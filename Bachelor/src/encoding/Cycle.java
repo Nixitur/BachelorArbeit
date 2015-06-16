@@ -7,11 +7,11 @@ package encoding;
  */
 public class Cycle implements Comparable<Cycle>{
 	/**
-	 * The first element of the cycle in in a <code>(x,y)</code> representation where x <= y
+	 * The first element of the cycle in in a <code>(x,y)</code> representation where x &le; y
 	 */
 	public final int x;
 	/**
-	 * The second element of the cycle in in a <code>(x,y)</code> representation where x <= y
+	 * The second element of the cycle in in a <code>(x,y)</code> representation where x &le; y
 	 */
 	public final int y;
 

@@ -8,11 +8,23 @@ import com.sun.jdi.event.EventQueue;
 import com.sun.jdi.event.EventSet;
 import com.sun.jdi.request.*;
 
+/**
+ * This class provides the implementation of a thread which works its way through a <code>VirtualMachine</code>'s
+ * events and waits for <code>MethodEntryEvent</code>s which it then processes.
+ * @author Kaspar
+ *
+ */
 public abstract class QueueThread extends Thread {
 
 	private VirtualMachine vm;
 	private EventRequestManager erm;
 	
+	/**
+	 * Creates a new <code>QueueThread</code> which observes a certain <code>VirtualMachine</code> for <code>MethodEntryEvent</code>s whose
+	 * methods are not in classes matching the pattern in <code>excludes</code>.
+	 * @param vm The <code>VirtualMachine</code> to observe.
+	 * @param excludes Strings of class patterns to exclude, e.g. Strings like "java.*" or "*.Foo". 
+	 */
 	public QueueThread(VirtualMachine vm, String[] excludes) {
 		this.vm = vm;
 		this.erm = vm.eventRequestManager();
@@ -29,6 +41,9 @@ public abstract class QueueThread extends Thread {
 	}
 	
 	@Override
+	/**
+	 * Runs this thread, waiting for events of class <code>MethodEntryEvent</code>.
+	 */
 	public void run() {
 		EventQueue queue = vm.eventQueue();
 		while(true){
@@ -37,7 +52,6 @@ public abstract class QueueThread extends Thread {
 				EventIterator it = eventSet.eventIterator();
 				while (it.hasNext()){
 					processEvent(it.nextEvent());
-					//vm.resume();
 				}
 				eventSet.resume();
 			} catch (InterruptedException e) {
@@ -49,6 +63,9 @@ public abstract class QueueThread extends Thread {
 		}
 	}
 	
+	/**
+	 * Called if the target VM disconnects.
+	 */
 	abstract void processDisconnected();
 
 	/**

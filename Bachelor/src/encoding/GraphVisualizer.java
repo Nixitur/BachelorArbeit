@@ -28,7 +28,7 @@ public class GraphVisualizer<V extends Comparable<? super V>> extends JFrame{
 	private JGraphModelAdapter<V, DefaultEdge> jgAdapter;
 	
 	/**
-	 * Constructs a window containing a JGraph for a given graph
+	 * Constructs a window containing a JGraph for a given graph.
 	 * @param g The <code>DirectedGraph</code> to display
 	 */
 	public GraphVisualizer(DirectedGraph<V,DefaultEdge> g){

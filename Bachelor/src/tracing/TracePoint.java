@@ -3,11 +3,23 @@ package tracing;
 import com.sun.jdi.Location;
 import com.sun.jdi.Value;
 
+/**
+ * This class is an implementation of the idea of "trace points" in "Dynamic Graph-Based Software Fingerprinting" by Collberg, Thomborson and
+ * Townsend. They contain a <code>Location</code> which describes a location in a class' code where a mark method was called and a <code>Value</code>
+ * which is the argument of that method call.
+ * @author Kaspar
+ *
+ */
 public abstract class TracePoint {
 	
-	private Location loc;
-	private Value val;
+	private final Location loc;
+	private final Value val;
 
+	/**
+	 * Creates a new instance with the code location <code>Location</code> and the argument value <code>Value</code>.
+	 * @param loc the code location
+	 * @param val the argument value. If this is <code>null</code>, it means that no argument is passed.
+	 */
 	public TracePoint(Location loc,Value val) {
 		this.loc = loc;
 		this.val = val;
@@ -28,10 +40,18 @@ public abstract class TracePoint {
 		return result.toString();
 	}
 
+	/**
+	 * Returns the code location of this instance.
+	 * @return the <code>Location</code> that is referenced in this instance.
+	 */
 	public Location getLoc() {
 		return loc;
 	}
 
+	/**
+	 * Returns the value of this instance.
+	 * @return the <code>Value</code> that is referenced in this instance.
+	 */
 	public Value getVal() {
 		return val;
 	}
@@ -46,7 +66,5 @@ public abstract class TracePoint {
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
 	@Override
-	public abstract boolean equals(Object obj);
-	
-	
+	public abstract boolean equals(Object obj);	
 }

@@ -13,6 +13,12 @@ import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 
+/**
+ * Instances of this class are decoders for a given reducible permutation graph. It can be decoded via the algorithm by Chroni and
+ * Nikolopoulos or the one by Bento et al.
+ * @author Kaspar
+ *
+ */
 public class Decoder{
 	private DirectedGraph<Integer,DefaultEdge> rpg;
 	private List<Integer> hamiltonPath;
@@ -20,7 +26,7 @@ public class Decoder{
 	private Integer startNode;
 	
 	/**
-	 * Instances of this class are decoders for a given reducible permutation graph.
+	 * Creates a new decoder for a specific reducible permutation graph.
 	 * @param rpg The RPG to be decoded.
 	 * @throws GraphStructureException If <code>rpg</code> is not an RPG encoded with the algorithm of Chroni and Nikolopoulos.
 	 */
@@ -36,6 +42,7 @@ public class Decoder{
 	 * Renames the vertices of <code>rpg</code> in accordance with the unique Hamilton path
 	 *   <code>hamiltonPath</code>. For <code>n</code> vertices, the vertex labels go from
 	 *   <code>n-2</code> to <code>-1</code>. This makes it robust against relabeling.
+	 * @return The relabeled graph.
 	 */
 	private DirectedGraph<Integer,DefaultEdge> renameVertices(){
 		Map<Integer,Integer> vertexNames = new HashMap<Integer,Integer>();
@@ -81,7 +88,7 @@ public class Decoder{
 	 * Decodes a self-inverting permutation to the number that is encoded in that permutation.
 	 * @param sip Any self-inverting permutation.
 	 * @return The number that is encoded in <code>sip</code> per the algorithm of Chroni and Nikolopoulos
-	 * @throws Exception
+	 * @throws Exception If the argument is not a self-inverting permutation.
 	 */
 	public int decodeSIPToW(int[] sip) throws Exception{
 		int[] bitonPerm = decodeSIPToBitonic(sip);
@@ -164,7 +171,6 @@ public class Decoder{
 	/**
 	 * Decodes the RPG with the algorithm of Bento et al.
 	 * @return The number that is encoded in the given RPG.
-	 * @throws GraphStructureException
 	 */
 	public int decodeRPGBento(){
 		// The rpg has exactly 2n+3 nodes, from 2n+1 to -1

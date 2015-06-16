@@ -14,6 +14,12 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * Instances of this class create a Java .class file that, if the methods therein are called in a certain order,
+ * constructs a specified RPG on the heap.
+ * @author Kaspar
+ *
+ */
 public class WatermarkCreator implements Constants {
 	public static final String 		CLASS_NAME = "Watermark";
 	private static final String		ARRAY_NAME = "array";
@@ -29,6 +35,12 @@ public class WatermarkCreator implements Constants {
 	private final List<List<Integer>> _splitNodes;
 	private final HashMap<Integer,Integer> remainingNeighbors;
 	
+	/**
+	 * Creates a new WaterMarkCreator.
+	 * @param packageName The package that the class should have. 
+	 * @param graph The RPG that is to be embedded in the code.
+	 * @param noOfSubgraphs The number of subgraphs that <code>graph</code> should be split up into.
+	 */
 	public WatermarkCreator(String packageName, DirectedGraph<Integer,DefaultEdge> graph, int noOfSubgraphs) {
 		_fullClassName = packageName+"."+CLASS_NAME;
 		_cg = new ClassGen(_fullClassName, "java.lang.Object", CLASS_NAME+".java", ACC_PUBLIC | ACC_SUPER, new String[] {  });
@@ -43,6 +55,11 @@ public class WatermarkCreator implements Constants {
 		remainingNeighbors = noOfNeighbors();
 	}
 	
+	/**
+	 * Creates and outputs the class.
+	 * @param out The target where the  class is output to.
+	 * @throws IOException If it's impossible to output on the chosen OutputStream.
+	 */
 	public void create(OutputStream out) throws IOException{
 		createFields();
 		createConstructor();
@@ -84,7 +101,7 @@ public class WatermarkCreator implements Constants {
 	
 	/**
 	 * Creates a new Watermark instance and pushes it on the stack, ready to be stored.
-	 * @param il
+	 * @param il The InstructionList that the instructions to create a new node is added to.
 	 */
 	private void createNewNode(InstructionList il){
 		// create a brand new node and push it on stack
@@ -99,7 +116,7 @@ public class WatermarkCreator implements Constants {
 	 * Creates code that loads two Watermark instances and connects them via field assignment. This is equivalent to creating an edge.
 	 * For example, if
 	 * the instance that stands for <code>sourceVertex</code> is <code>o1</code>  and the instance that stands for
-	 * <code>targetVertex</code> is </code>o2</code>, the assignment is<br>
+	 * <code>targetVertex</code> is <code>o2</code>, the assignment is<br>
 	 * <code>o1.fieldName = o2</code><br> 
 	 * @param sourceVertex The source vertex of the edge.
 	 * @param targetVertex The target vertex of the edge.
@@ -135,9 +152,10 @@ public class WatermarkCreator implements Constants {
 	}
 	
 	/**
-	 * Creates code that creates
+	 * Creates code that extracts the necessary incoming neighbors via tree edges of specified nodes
+	 *  
 	 * @param treeNeighbors
-	 * @param il
+	 * @param il The <code>InstructionList</code> that is to be appended to.
 	 * @param vertexToVarIndex
 	 */
 	private void createTreeNeighbors(TreeNeighborMap treeNeighbors, InstructionList il, VertexToVarIndexMap vertexToVarIndex){
@@ -165,7 +183,7 @@ public class WatermarkCreator implements Constants {
 	/**
 	 * Creates code that checks whether <code>array</code> is null. If it is, a new array is built and filled with
 	 * new Watermarks.
-	 * @param il
+	 * @param il The <code>InstructionList</code> that is to be appended to.
 	 */
 	private void createCheckIfArrayNull(InstructionList il){
 		// push array on stack
@@ -216,6 +234,9 @@ public class WatermarkCreator implements Constants {
 		ifArrayNonNull.setTarget(nop);
 	}
 
+	/**
+	 * Creates the fields of the class and adds them to the class generator.
+	 */
 	private void createFields(){
 		FieldGen field;
 		
@@ -229,6 +250,9 @@ public class WatermarkCreator implements Constants {
 		_cg.addField(field.getField());
 	}
 	
+	/**
+	 * Creates the constructor for the class. This constructor has no arguments and does literally nothing except create a new instance.
+	 */
 	private void createConstructor(){
 		InstructionList il = new InstructionList();
 		// Constructor is public, has no return type, no arguments, is called <init> and is in Watermark
@@ -246,6 +270,10 @@ public class WatermarkCreator implements Constants {
 		il.dispose();
 	}
 	
+	/**
+	 * Creates code that builds the <code>i</code>-th subgraph. 
+	 * @param i The index of the subgraph that is to be created. It goes from 0 to <code>noOfSubgraphs-1</code>.
+	 */
 	private void createBuildGi(int i){
 		List<Integer> nodes = _splitNodes.get(i);
 		boolean thisIsG0 = (i == 0);
@@ -359,8 +387,6 @@ public class WatermarkCreator implements Constants {
 		
 		String packageName = "example";
 		WatermarkCreator creator = new WatermarkCreator(packageName, graph, k);
-		String fullClassName = creator._fullClassName;
-		int cutOff = fullClassName.lastIndexOf('.');
 		
 		String separator = File.separator;
 		String className = CLASS_NAME;
@@ -368,7 +394,6 @@ public class WatermarkCreator implements Constants {
 		try {
 			creator.create(new FileOutputStream(packageName+separator+className+".class"));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
