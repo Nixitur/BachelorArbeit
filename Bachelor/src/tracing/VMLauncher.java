@@ -1,6 +1,8 @@
 package tracing;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -13,7 +15,9 @@ import com.sun.jdi.connect.VMStartException;
 
 public class VMLauncher {
 	
+
 	private MarkTraceThread mtt;
+	private VirtualMachine vm;
 	private String[] excludes = {"java.*", "javax.*", "sun.*", "com.sun.*", "org.jpgrapht.graph.*",
 			"org.jgrapht.*", "java.nio.*", "oracle.*", "org.objectweb.asm.*", "javax.swing.*",
 			"jdk.internal.org.*"};
@@ -28,7 +32,7 @@ public class VMLauncher {
 	 *  containing a method mark.
 	 */
 	public VMLauncher(String className, String[] args, String markMethodName) {
-		VirtualMachine vm = launchVMAndSuspend(className,args);
+		this.vm = launchVMAndSuspend(className,args);
 		Process process = vm.process();
 		Thread errThread = new InToOutThread(process.getErrorStream(), System.err);
 		Thread outThread = new InToOutThread(process.getInputStream(), System.out);
@@ -71,6 +75,17 @@ public class VMLauncher {
 		String classpath = System.getProperty("java.class.path");
         optionArg.setValue("-cp "+classpath);
         
+        Class clazz;
+        String className = "example.Example";
+        String resName = "/"+className.replaceAll("\\.", "/")+".class";
+        System.out.println(resName);
+		try {
+			InputStream is =  Class.forName(className).getResourceAsStream(resName);
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}        
+        
         return arguments;
 	}
 	
@@ -110,5 +125,9 @@ public class VMLauncher {
 	 */
 	public MarkTraceThread getTraceThread(){
 		return mtt;
+	}
+	
+	public VirtualMachine getVM(){
+		return vm;
 	}
 }

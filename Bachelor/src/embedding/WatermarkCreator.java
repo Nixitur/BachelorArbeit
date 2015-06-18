@@ -66,6 +66,7 @@ public class WatermarkCreator implements Constants {
 		for (int i = 0; i < _splitNodes.size(); i++){
 			createBuildGi(i);
 		}
+		createMain();
 		_cg.getJavaClass().dump(out);
 	}
 	
@@ -268,6 +269,24 @@ public class WatermarkCreator implements Constants {
 		method.setMaxLocals();
 		_cg.addMethod(method.getMethod());
 		il.dispose();
+	}
+	
+	/**
+	 * Creates a <code>public static void main(String[] args)</code> method that calls all buildG# methods in order.
+	 * This is solely for testing, don't actually leave this in. 
+	 */
+	private void createMain(){
+		InstructionList il = new InstructionList();
+		MethodGen method = new MethodGen(ACC_PUBLIC | ACC_STATIC, Type.VOID, new Type[] { new ArrayType(Type.STRING, 1) }, new String[] { "arg0" }, "main", _fullClassName, il, _cp);
+		
+		for (int i = 0; i < _splitNodes.size(); i++){
+			il.append(_factory.createInvoke(_fullClassName, "buildG"+i, Type.VOID, Type.NO_ARGS, Constants.INVOKESTATIC));
+		}
+		il.append(InstructionFactory.createReturn(Type.VOID));
+		method.setMaxStack();
+	    method.setMaxLocals();
+	    _cg.addMethod(method.getMethod());
+	    il.dispose();
 	}
 	
 	/**

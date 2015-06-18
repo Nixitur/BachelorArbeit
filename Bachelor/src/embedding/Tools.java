@@ -48,7 +48,7 @@ public class Tools {
 	}
 	
 	/**
-	 * Returns the signature for the method that <code>loc</code> belongs to. See <code>methodSig(com.sun.jdi.Method)</code> for further
+	 * Returns the signature for the method that <code>loc</code> belongs to. See <code>methodSig(com.sun.jdi.Method, ReferenceType)</code> for further
 	 * details.
 	 * @param loc The <code>Location</code>.
 	 * @return The standardized signature for the method that <code>loc</code> belongs to.

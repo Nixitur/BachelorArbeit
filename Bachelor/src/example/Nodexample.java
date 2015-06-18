@@ -104,23 +104,8 @@ public class Nodexample {
 	}
 	
 	public static void main(String[] args){
-		String order;
-		if ((args.length < 1)||(args[0].length()<3)){
-			order = "012";
-		} else {
-			order = args[0];
-		}
-		for (int i = 0; i<3; i++){
-			switch (order.charAt(i)){
-				case '0': 	buildG0();
-							break;
-				case '1':	buildG1();
-							break;
-				case '2':	buildG2();
-							break;
-			}
-		}
-		Nodexample[] barray = array;
-		return;
+		buildG0();
+		buildG1();
+		buildG2();
 	}
 }

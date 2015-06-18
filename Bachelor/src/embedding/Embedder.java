@@ -1,17 +1,17 @@
 package embedding;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
-import org.apache.bcel.util.BCELifier;
-
 import com.sun.jdi.Location;
 
 import tracing.*;
@@ -28,7 +28,6 @@ public class Embedder {
 	private HashMap<String,JavaClass> fileToClass;
 	private HashMap<Location,String> locToFile;
 	private HashMap<Location,Method> locToBCELMethod;
-	private HashMap<Location,List<TracePoint>> locToTracePoint;
 
 	/**
 	 * Constructs a new Embedder which executes a class and identifies its TracePoints.
@@ -41,7 +40,36 @@ public class Embedder {
 		locToFile = Tools.getFileNames(tracePoints);
 		fileToClass = Tools.getClasses(locToFile.values());
 		locToBCELMethod = getMethods();
-		locToTracePoint = Tools.getLocToTracePoints(tracePoints);
+		//
+		HashMap<JavaClass,ClassContainer> classToClassCont = new HashMap<JavaClass,ClassContainer>();
+		for (TracePoint trace : tracePoints){
+			String classPath = locToFile.get(trace.getLoc());
+			JavaClass clazz = fileToClass.get(classPath);
+			Method method = locToBCELMethod.get(trace.getLoc());
+			ClassContainer classCont;
+			if (!classToClassCont.containsKey(clazz)){
+				classCont = new ClassContainer(clazz);
+				classToClassCont.put(clazz, classCont);
+			} else {
+				classCont = classToClassCont.get(clazz);
+			}
+			classCont.newMethodContainer(method);
+			classCont.addTracePoint(trace);
+		}
+		for (ClassContainer cont : classToClassCont.values()){
+			cont.processTracePoints();
+			String fullName = cont.getClassName();
+			int index = fullName.lastIndexOf('.');
+			String packageName = fullName.substring(0, index);
+			String className = fullName.substring(index+1,fullName.length());
+			packageName = packageName.replace('.', File.separator.charAt(0));
+			try {
+				OutputStream out = new FileOutputStream(packageName+File.separator+className+".class");
+				cont.getJavaClass().dump(out);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 	/**
