@@ -2,7 +2,6 @@ package tracing;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 
@@ -74,18 +73,7 @@ public class VMLauncher {
 		Connector.Argument optionArg = arguments.get("options");
 		String classpath = System.getProperty("java.class.path");
         optionArg.setValue("-cp "+classpath);
-        
-        Class clazz;
-        String className = "example.Example";
-        String resName = "/"+className.replaceAll("\\.", "/")+".class";
-        System.out.println(resName);
-		try {
-			InputStream is =  Class.forName(className).getResourceAsStream(resName);
-		} catch (ClassNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}        
-        
+                
         return arguments;
 	}
 	
