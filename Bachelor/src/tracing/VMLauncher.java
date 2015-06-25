@@ -24,14 +24,15 @@ public class VMLauncher {
 	/**
 	 * Creates a new <code>VMLauncher</code> which immediately launches the Java Virtual Machine for class <code>className</code> and arguments
 	 * <code>args</code>. Furthermore, a <code>MarkTraceThread</code> is started which tracks calls to a mark method.
-	 * @param className The full class name of the to be executed class.
+	 * @param classPath The classpath by which the class may be executed.
+	 * @param className The fully qualified name of the to be executed class.
 	 * @param args The arguments to the class' main method.
 	 * @param markMethodName The full name of the mark method. This needs to contain the package as well as the class, so
 	 *  for example, "mark" would not be correct, but "myPackage.Marker.mark" would be if myPackage is a package containing a class Marker
 	 *  containing a method mark.
 	 */
-	public VMLauncher(String className, String[] args, String markMethodName) {
-		this.vm = launchVMAndSuspend(className,args);
+	public VMLauncher(String classPath, String className, String[] args, String markMethodName) {
+		this.vm = launchVMAndSuspend(classPath, className,args);
 		Process process = vm.process();
 		Thread errThread = new InToOutThread(process.getErrorStream(), System.err);
 		Thread outThread = new InToOutThread(process.getInputStream(), System.out);
@@ -63,7 +64,7 @@ public class VMLauncher {
 	 *        The format is the class name, followed by its arguments, separated by spaces.
 	 * @return
 	 */
-	private Map<String,Connector.Argument> getArguments(LaunchingConnector connector, String classAndArgs){
+	private Map<String,Connector.Argument> getArguments(String classPath, LaunchingConnector connector, String classAndArgs){
 		Map<String,Connector.Argument> arguments = connector.defaultArguments();
 		// It needs the proper main class and arguments
 		Connector.Argument mainArg = arguments.get("main");
@@ -71,8 +72,8 @@ public class VMLauncher {
 		
 		// Make target VM inherit the classpath
 		Connector.Argument optionArg = arguments.get("options");
-		String classpath = System.getProperty("java.class.path");
-        optionArg.setValue("-cp "+classpath);
+		String thisClasspath = System.getProperty("java.class.path");
+        optionArg.setValue("-cp "+thisClasspath+";"+classPath);
                 
         return arguments;
 	}
@@ -80,11 +81,12 @@ public class VMLauncher {
 	/**
 	 * Launches the Java Virtual Machine with a specified main class and arguments and immediately suspends it. It hereby inherits the
 	 * debugger's classpath. Remember to resume the VM.
+	 * @param classPath The classpath.
 	 * @param className The full class name for the to be executed class.
 	 * @param args The arguments to the class' main method.
 	 * @return
 	 */
-	VirtualMachine launchVMAndSuspend(String className, String[] args){		
+	VirtualMachine launchVMAndSuspend(String classPath, String className, String[] args){		
 		StringBuffer classAndArgsBuf = new StringBuffer(className);
 		// The main class and its command line arguments
 		for (int i = 0; i < args.length; i++){
@@ -93,7 +95,7 @@ public class VMLauncher {
 		String classAndArgs = classAndArgsBuf.toString();
 		
 		LaunchingConnector cmdLineConnector = getConnector();
-		Map<String,Connector.Argument> arguments = getArguments(cmdLineConnector, classAndArgs);
+		Map<String,Connector.Argument> arguments = getArguments(classPath, cmdLineConnector, classAndArgs);
 		try {
 			VirtualMachine vm = cmdLineConnector.launch(arguments);
 			vm.suspend();

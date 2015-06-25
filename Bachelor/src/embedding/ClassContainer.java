@@ -1,9 +1,6 @@
 package embedding;
 
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ClassGen;
@@ -18,17 +15,27 @@ public class ClassContainer extends ClassGen{
 	private InstructionFactory _factory;
 	private JavaClass _clazz;
 	private HashMap<Method,MethodContainer> markedMethodsToContainers;
+	private final int _stackMapTableIndex;
 
 	public ClassContainer(JavaClass clazz) {
 		super(clazz);
 		_clazz = clazz;
 		_cp = getConstantPool();
+		int index;
+		if ((index = _cp.lookupUtf8("StackMapTable")) != -1){
+			_stackMapTableIndex = index;
+		} else {
+			_stackMapTableIndex = _cp.addUtf8("StackMapTable");
+		}		
 		_factory = new InstructionFactory(this,_cp);
 		markedMethodsToContainers = new HashMap<Method,MethodContainer>();
 	}
 	
 	public void newMethodContainer(Method method){
-		MethodContainer methodCont = new MethodContainer(method, getClassName(), _cp, _factory);
+		if (markedMethodsToContainers.containsKey(method)){
+			return;
+		}
+		MethodContainer methodCont = new MethodContainer(method, getClassName(), _cp, _factory, _stackMapTableIndex);
 		markedMethodsToContainers.put(method, methodCont);
 	}
 	
@@ -45,5 +52,36 @@ public class ClassContainer extends ClassGen{
 			methodCont.setMaxLocals();
 			replaceMethod(method, methodCont.getMethod());
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result + ((_clazz == null) ? 0 : _clazz.hashCode());
+		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ClassContainer other = (ClassContainer) obj;
+		if (_clazz == null) {
+			if (other._clazz != null)
+				return false;
+		} else if (!_clazz.equals(other._clazz))
+			return false;
+		return true;
 	}
 }

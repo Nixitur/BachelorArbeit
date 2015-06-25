@@ -10,10 +10,11 @@ import com.sun.jdi.Value;
  * @author Kaspar
  *
  */
-public abstract class TracePoint {
+public abstract class TracePoint implements Comparable<TracePoint>{
 	
 	private final Location loc;
 	private final Value val;
+	private int index;
 
 	/**
 	 * Creates a new instance with the code location <code>Location</code> and the argument value <code>Value</code>.
@@ -36,8 +37,12 @@ public abstract class TracePoint {
 			valToString = val.toString();
 		}
 		String signature = embedding.Tools.methodSig(loc);
-		String result = "("+signature+"|"+loc.codeIndex()+"|"+valToString+")";
+		String result = index+":("+signature+"|"+loc.codeIndex()+"|"+valToString+")";
 		return result.toString();
+	}
+	
+	public int compareTo(TracePoint t){
+		return (int) (t.loc.codeIndex() - loc.codeIndex());
 	}
 
 	/**
@@ -54,6 +59,22 @@ public abstract class TracePoint {
 	 */
 	public Value getVal() {
 		return val;
+	}
+	
+	/**
+	 * Sets the index field.
+	 * @param index the index
+	 */
+	public void setIndex(int index){
+		this.index = index;
+	}
+	
+	/**
+	 * Returns the index. This is for knowing which graph-building method to call.
+	 * @return the index
+	 */
+	public int getIndex(){
+		return index;
 	}
 
 	/* (non-Javadoc)

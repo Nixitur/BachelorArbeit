@@ -170,45 +170,28 @@ public class Tools {
 	}
 
 	/**
-	 * Creates a <code>HashMap</code> that maps several code locations to the path to its Java .class file.
-	 * @param tracePoints A list of <code>TracePoint</code>s which reference the code locations that we want
-	 *   to map to the path to their .class files. 
-	 * @return A Map which, for every <code>TracePoint</code> in <code>tracePoints</code>, maps the <code>Location</code>
-	 *   of that <code>TracePoint</code> to its .class file.
-	 */
-	static HashMap<Location,String> getFileNames(List<TracePoint> tracePoints){
-		HashMap<Location,String> result = new HashMap<Location,String>();
-		Location loc;
-		String sig;
-		int i;
-		for (TracePoint tracePoint : tracePoints){
-			loc = tracePoint.getLoc();
-			sig = methodSig(loc);
-			i = sig.indexOf('.');
-			sig = sig.substring(0, i+1)+"class";
-			result.put(loc, sig);
-		}
-		return result;
-	}
-
-	/**
 	 * Parses .class files and returns a Map that maps the paths to these files to the corresponding <code>JavaClass</code>.
 	 * @param pathsToClassFiles Contains paths to .class files relative to the working directory.
 	 * @return Maps each path of a .class file to its parsed <code>JavaClass</code>.
 	 */
-	static HashMap<String,JavaClass> getClasses(Collection<String> pathsToClassFiles){
-		HashMap<String,JavaClass> result = new HashMap<String,JavaClass>();
+	static HashMap<TracePoint,JavaClass> getClasses(Collection<TracePoint> tracePoints, String classPath){
+		HashMap<TracePoint,JavaClass> result = new HashMap<TracePoint,JavaClass>();
 		ClassParser parser;
-		JavaClass thisClass = null;
-		for (String sig : pathsToClassFiles){			
-			if (!result.containsKey(sig)){
+		JavaClass clazz = null;
+		String sig;
+		for (TracePoint trace : tracePoints){
+			sig = methodSig(trace.getLoc());
+			int i = sig.indexOf('.');
+			sig = sig.substring(0, i+1)+"class";
+			if (!result.containsKey(trace)){
 				try {
-					parser = new ClassParser(sig);
-					thisClass = parser.parse();
+					// TODO: This mostly works, I guess, but there may be multiple class paths. Maybe use a URLClassLoader?
+					parser = new ClassParser(classPath+"/"+sig);
+					clazz = parser.parse();
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
-				result.put(sig, thisClass);
+				result.put(trace, clazz);
 			}
 		}
 		return result;

@@ -18,6 +18,11 @@ public class Example extends ExampleAbstract implements ActionListener, ExampleF
     public static void d(int i){
     	Marker.mark(i);
     }
+    public void instanceMethod(){
+    	Marker.mark("instanceMethod");
+    	PrivExample p = new PrivExample();
+    	p.privMethod();
+    }
     public void actionPerformed(ActionEvent e){
     	Marker.mark();
     	abstractMethod();
@@ -36,6 +41,8 @@ public class Example extends ExampleAbstract implements ActionListener, ExampleF
         f.setLocationRelativeTo(null);
         f.pack(); f.setVisible(true);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        Example e = new Example();
+        e.instanceMethod();
     }
 
     @Override
@@ -55,5 +62,10 @@ public class Example extends ExampleAbstract implements ActionListener, ExampleF
 		methodInSuperClass();
 	}
     
+	private class PrivExample{
+		public void privMethod(){
+			Marker.mark("privateClass");
+		}		
+	}
     
 }

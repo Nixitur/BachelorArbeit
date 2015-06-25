@@ -9,10 +9,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import org.apache.bcel.classfile.ClassParser;
+
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
-import com.sun.jdi.Location;
 
 import tracing.*;
 
@@ -23,29 +22,37 @@ import tracing.*;
  */
 public class Embedder {
 	
-	private JavaClass clazz = null;
 	private List<TracePoint> tracePoints;
-	private HashMap<String,JavaClass> fileToClass;
-	private HashMap<Location,String> locToFile;
-	private HashMap<Location,Method> locToBCELMethod;
+	private HashMap<TracePoint,JavaClass> traceToClass;
+	private HashMap<TracePoint,Method> traceToMethod;
+	private HashMap<JavaClass,ClassContainer> classToClassCont;
 
 	/**
 	 * Constructs a new Embedder which executes a class and identifies its TracePoints.
-	 * @param args The first element is the path to the class file. The following elements are arguments
-	 * 			   to the <code>main()</code> method of the class in the class file.
+	 * @param classPath The path from which all necessary classes can be loaded.
+	 * @param className the fully qualified name of the main class.
+	 * @param args The arguments to the main class' main method.
+	 * @param markMethodName the fully qualified name of the mark method(s).
 	 */
-	public Embedder(String pathToClassFile, String[] args, String markMethodName) {
-		tracePoints = runClassFile(pathToClassFile, args, markMethodName);
+	public Embedder(String classPath, String className, String[] args, String markMethodName) {
+		tracePoints = runClassFile(classPath, className, args, markMethodName);
+		traceToClass = Tools.getClasses(tracePoints, classPath);
 		System.out.println(Arrays.toString(tracePoints.toArray()));
-		locToFile = Tools.getFileNames(tracePoints);
-		fileToClass = Tools.getClasses(locToFile.values());
-		locToBCELMethod = getMethods();
+		traceToMethod = getMethods();
 		//
-		HashMap<JavaClass,ClassContainer> classToClassCont = new HashMap<JavaClass,ClassContainer>();
+		classToClassCont = new HashMap<JavaClass,ClassContainer>();
+		setUpContainers();
+		processTracePoints(classPath);
+	}
+	
+	/**
+	 * Initializes and builds the <code>ClassContainer</code>s for the classes that contain the <code>TracePoint</code>s in <code>tracePoints</code>.
+	 * Also sets up the HashMap classToClassCont that maps each JavaClass to the ClassContainer that contains it.
+	 */
+	private void setUpContainers(){
 		for (TracePoint trace : tracePoints){
-			String classPath = locToFile.get(trace.getLoc());
-			JavaClass clazz = fileToClass.get(classPath);
-			Method method = locToBCELMethod.get(trace.getLoc());
+			JavaClass clazz = traceToClass.get(trace);
+			Method method = traceToMethod.get(trace);
 			ClassContainer classCont;
 			if (!classToClassCont.containsKey(clazz)){
 				classCont = new ClassContainer(clazz);
@@ -56,16 +63,25 @@ public class Embedder {
 			classCont.newMethodContainer(method);
 			classCont.addTracePoint(trace);
 		}
+	}
+	
+	/**
+	 * Processes the trace points and saves the modified classes. 
+	 */
+	private void processTracePoints(String classPath){
 		for (ClassContainer cont : classToClassCont.values()){
 			cont.processTracePoints();
 			String fullName = cont.getClassName();
 			int index = fullName.lastIndexOf('.');
-			String packageName = fullName.substring(0, index);
-			String className = fullName.substring(index+1,fullName.length());
-			packageName = packageName.replace('.', File.separator.charAt(0));
+			String thisPackage = fullName.substring(0, index);
+			String thisClass = fullName.substring(index+1,fullName.length());
+			thisPackage = thisPackage.replace('.', File.separator.charAt(0));
 			try {
-				OutputStream out = new FileOutputStream(packageName+File.separator+className+".class");
+				//TODO: Get the actual path to the .class file as assuming they are all on one path may be wrong.
+				//new FileOutputStream("this.class");
+				OutputStream out = new FileOutputStream(classPath+File.separator+thisPackage+File.separator+thisClass+".class");
 				cont.getJavaClass().dump(out);
+				out.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -74,21 +90,14 @@ public class Embedder {
 	
 	/**
 	 * 
-	 * @param args The first element is the path to the class file. The following elements are arguments
-	 * 			   to the <code>main()</code> method of the class in the class file.
-	 * @param markMethodName The full name of the mark method. This needs to contain the package as well as the class, so
-	 *  for example "mark" would not be correct, but "myPackage.Marker.mark" would be.
-	 * @return
+	 * @param classPath The path to the environment from which the main class can be called.
+	 * @param className The fully qualified name of the main class.
+	 * @param args The arguments to the main class' main method.
+	 * @param markMethodName The fully qualified name of the mark method.
+	 * @return The TracePoints that are encountered in the execution of the main class.
 	 */
-	private List<TracePoint> runClassFile(String pathToClassFile, String[] args, String markMethodName){
-		try {
-			ClassParser parser = new ClassParser(pathToClassFile);
-			clazz = parser.parse();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		String name = clazz.getClassName();
-		VMLauncher vmLauncher = new tracing.VMLauncher(name, args, markMethodName);
+	private List<TracePoint> runClassFile(String classPath, String className, String[] args, String markMethodName){
+		VMLauncher vmLauncher = new tracing.VMLauncher(classPath, className, args, markMethodName);
 		MarkTraceThread mtt = vmLauncher.getTraceThread();
 		
 		// Wait until the debuggee is done
@@ -105,27 +114,26 @@ public class Embedder {
 	}
 	
 	/**
-	 * <code>locToFile</code> and <code>fileToClass</code> must have already been correctly initialized before this
-	 * method may be called. Otherwise, bad times will occur.
-	 * @return A <code>HashMap</code> that maps every <code>Location</code> found in <code>locToFile</code> to the
+	 * <code>traceToClass</code> must have already been correctly initialized before this method may be called. Otherwise, bad times will occur.
+	 * @param tracePoints A collection of TracePoints.
+	 * @return A <code>HashMap</code> that maps every <code>TracePoint</code> found in <code>tracePoints</code> to the
 	 *   <code>Method</code> that it's contained in.
 	 */
-	private HashMap<Location,Method> getMethods(){
-		HashMap<Location,Method> result = new HashMap<Location,Method>();
-		String file;
-		for (Location loc : locToFile.keySet()){
-			file = locToFile.get(loc);
-			Method method = Tools.findMethod(fileToClass.get(file), loc);
-			result.put(loc, method);
+	private HashMap<TracePoint,Method> getMethods(){
+		HashMap<TracePoint,Method> result = new HashMap<TracePoint,Method>();
+		for (TracePoint trace : traceToClass.keySet()){
+			Method method = Tools.findMethod(traceToClass.get(trace), trace.getLoc());
+			result.put(trace, method);
 		}
 		return result;
 	}
 	
 	public static void main(String[] args){
-		String pathToClassFile = args[0];
+		String classPath = args[0];
+		String className = args[1];
 		String markMethodName = args[args.length-1];
-		String[] arguments = Arrays.copyOfRange(args, 1, args.length-1);
-		new Embedder(pathToClassFile,arguments, markMethodName);
+		String[] arguments = Arrays.copyOfRange(args, 2, args.length-1);
+		new Embedder(classPath,className,arguments, markMethodName);
 //		try {
 //			ClassParser parser = new ClassParser("example/Nodexample.class");
 //			JavaClass clazz = parser.parse();

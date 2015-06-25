@@ -101,10 +101,12 @@ public class MarkTraceThread extends QueueThread {
 
 	@Override
 	/**
-	 * Called if the target VM is disconnected. If this happens, duplicates are removed from <code>tracePoints</code>.
+	 * Called if the target VM is disconnected. If this happens, duplicates are removed from <code>tracePoints</code> and they are enumerated
+	 * in the correct order.
 	 */
 	void processDisconnected() {
 		removeDuplicates();
+		setIndices();
 	}
 	
 	/**
@@ -129,5 +131,15 @@ public class MarkTraceThread extends QueueThread {
 	private void removeDuplicates(){
 		tracePoints.removeAll(toBeDeleted);
 	}
-
+	
+	/**
+	 * Sets the correct indices for each TracePoint in the order in which they appear in tracePoints.
+	 */
+	private void setIndices(){
+		int index = 0;
+		for (TracePoint trace : tracePoints){
+			trace.setIndex(index);
+			index++;
+		}
+	}
 }
