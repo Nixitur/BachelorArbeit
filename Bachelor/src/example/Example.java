@@ -59,7 +59,7 @@ public class Example extends ExampleAbstract implements ActionListener, ExampleF
 	 */
 	void abstractMethod() {
 		Marker.mark("abstract");
-		methodInSuperClass();
+		methodInSuperClass(3);
 	}
     
 	private class PrivExample{

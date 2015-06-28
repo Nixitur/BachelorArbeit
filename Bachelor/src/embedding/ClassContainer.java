@@ -1,6 +1,7 @@
 package embedding;
 
 import java.util.HashMap;
+
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
 import org.apache.bcel.generic.ClassGen;
@@ -11,14 +12,16 @@ import tracing.TracePoint;
 
 public class ClassContainer extends ClassGen{
 	private static final long serialVersionUID = 1L;
+	private String _watermarkClassName;
 	private ConstantPoolGen _cp;
 	private InstructionFactory _factory;
 	private JavaClass _clazz;
 	private HashMap<Method,MethodContainer> markedMethodsToContainers;
 	private final int _stackMapTableIndex;
 
-	public ClassContainer(JavaClass clazz) {
+	public ClassContainer(JavaClass clazz, String watermarkClassName) {
 		super(clazz);
+		_watermarkClassName = watermarkClassName;
 		_clazz = clazz;
 		_cp = getConstantPool();
 		int index;
@@ -35,7 +38,7 @@ public class ClassContainer extends ClassGen{
 		if (markedMethodsToContainers.containsKey(method)){
 			return;
 		}
-		MethodContainer methodCont = new MethodContainer(method, getClassName(), _cp, _factory, _stackMapTableIndex);
+		MethodContainer methodCont = new MethodContainer(method, getClassName(), _cp, _factory, _stackMapTableIndex, _watermarkClassName);
 		markedMethodsToContainers.put(method, methodCont);
 	}
 	

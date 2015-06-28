@@ -26,6 +26,7 @@ public class Embedder {
 	private HashMap<TracePoint,JavaClass> traceToClass;
 	private HashMap<TracePoint,Method> traceToMethod;
 	private HashMap<JavaClass,ClassContainer> classToClassCont;
+	private String _watermarkClassName;
 
 	/**
 	 * Constructs a new Embedder which executes a class and identifies its TracePoints.
@@ -34,10 +35,11 @@ public class Embedder {
 	 * @param args The arguments to the main class' main method.
 	 * @param markMethodName the fully qualified name of the mark method(s).
 	 */
-	public Embedder(String classPath, String className, String[] args, String markMethodName) {
+	public Embedder(String classPath, String className, String[] args, String markMethodName, String watermarkClassName) {
 		tracePoints = runClassFile(classPath, className, args, markMethodName);
 		traceToClass = Tools.getClasses(tracePoints, classPath);
 		System.out.println(Arrays.toString(tracePoints.toArray()));
+		_watermarkClassName = watermarkClassName;
 		traceToMethod = getMethods();
 		//
 		classToClassCont = new HashMap<JavaClass,ClassContainer>();
@@ -55,7 +57,7 @@ public class Embedder {
 			Method method = traceToMethod.get(trace);
 			ClassContainer classCont;
 			if (!classToClassCont.containsKey(clazz)){
-				classCont = new ClassContainer(clazz);
+				classCont = new ClassContainer(clazz, _watermarkClassName);
 				classToClassCont.put(clazz, classCont);
 			} else {
 				classCont = classToClassCont.get(clazz);
@@ -133,7 +135,7 @@ public class Embedder {
 		String className = args[1];
 		String markMethodName = args[args.length-1];
 		String[] arguments = Arrays.copyOfRange(args, 2, args.length-1);
-		new Embedder(classPath,className,arguments, markMethodName);
+		new Embedder(classPath,className,arguments, markMethodName, "example.Watermark");
 //		try {
 //			ClassParser parser = new ClassParser("example/Nodexample.class");
 //			JavaClass clazz = parser.parse();

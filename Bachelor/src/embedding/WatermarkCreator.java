@@ -70,6 +70,10 @@ public class WatermarkCreator implements Constants {
 		_cg.getJavaClass().dump(out);
 	}
 	
+	public String getClassName(){
+		return _fullClassName;
+	}
+	
 	/**
 	 * Counts the number of neighbors of each vertex of <code>_graph</code>.
 	 * @return A <code>HashMap</code> that associates each vertex (key) with the number of neighbors that vertex has (value).

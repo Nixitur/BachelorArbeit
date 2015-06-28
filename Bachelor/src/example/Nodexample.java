@@ -8,6 +8,35 @@ package example;
 public class Nodexample {
 	public Nodexample e1,e2;
 	public static Nodexample[] array;
+
+	public static void testi(int val){
+		Marker.mark(2*val+3);		
+	}
+
+	// Let's assume that the mark function was called with 9
+	public static void testo(int val){
+		if (val == 9){
+			buildG0();
+		} else {
+			testN();
+		}
+	}
+	
+	public static void help(int i){}
+	
+	public static void testS(String val){
+		Marker.mark(val+".");
+	}
+	
+	public static void testoS(String val){
+		if ((val+".").equals("lel.")){
+			buildG0();
+		}
+	}
+	
+	public static void testN(){
+		buildG0();
+	}
 	
 	public static void buildG0(){
 		if (array == null){
