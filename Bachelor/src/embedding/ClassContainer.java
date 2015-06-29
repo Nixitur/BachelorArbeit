@@ -10,43 +10,58 @@ import org.apache.bcel.generic.InstructionFactory;
 
 import tracing.TracePoint;
 
-public class ClassContainer extends ClassGen{
+/**
+ * A ClassGen that deals with TracePoints and inserts calls to build methods at the TracePoints' code locations.
+ * @author Kaspar
+ *
+ */
+class ClassContainer extends ClassGen{
 	private static final long serialVersionUID = 1L;
 	private String _watermarkClassName;
 	private ConstantPoolGen _cp;
 	private InstructionFactory _factory;
 	private JavaClass _clazz;
 	private HashMap<Method,MethodContainer> markedMethodsToContainers;
-	private final int _stackMapTableIndex;
 
+	/**
+	 * Constructs a new ClassContainer.
+	 * @param clazz The JavaClass that this ClassContainer should modify.
+	 * @param watermarkClassName The fully qualified name of the watermark class.
+	 */
 	public ClassContainer(JavaClass clazz, String watermarkClassName) {
 		super(clazz);
 		_watermarkClassName = watermarkClassName;
 		_clazz = clazz;
 		_cp = getConstantPool();
-		int index;
-		if ((index = _cp.lookupUtf8("StackMapTable")) != -1){
-			_stackMapTableIndex = index;
-		} else {
-			_stackMapTableIndex = _cp.addUtf8("StackMapTable");
-		}		
 		_factory = new InstructionFactory(this,_cp);
 		markedMethodsToContainers = new HashMap<Method,MethodContainer>();
 	}
 	
+	/**
+	 * Adds a new MethodContainer to this instance that deals with the TracePoints contained therein.
+	 * @param method A Method of this class.
+	 */
 	public void newMethodContainer(Method method){
 		if (markedMethodsToContainers.containsKey(method)){
 			return;
 		}
-		MethodContainer methodCont = new MethodContainer(method, getClassName(), _cp, _factory, _stackMapTableIndex, _watermarkClassName);
+		MethodContainer methodCont = new MethodContainer(method, getClassName(), _cp, _factory, _watermarkClassName);
 		markedMethodsToContainers.put(method, methodCont);
 	}
 	
+	/**
+	 * Adds a TracePoint to a MethodContainer contained in this ClassContainer. There must already exist a MethodContainer in this ClassContainer whose
+	 * method contains the TracePoint. 
+	 * @param trace A TracePoint in a method in a MethodContainer in this instance.
+	 */
 	public void addTracePoint(TracePoint trace){
 		Method method = Tools.findMethod(_clazz, trace.getLoc());
 		markedMethodsToContainers.get(method).addTracePoint(trace);
 	}
 	
+	/**
+	 * Processes the previously added TracePoints, adding calls to graph-building methods of the watermark class to the MethodContainers that were added. 
+	 */
 	public void processTracePoints(){
 		for (Method method : markedMethodsToContainers.keySet()){
 			MethodContainer methodCont = markedMethodsToContainers.get(method);

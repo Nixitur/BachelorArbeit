@@ -78,7 +78,8 @@ public class Tools {
 	 * Splits nodes of a graph with a specified Hamilton Path into several lists. These sublists are as close to
 	 * each other in terms of size as possible.
 	 * @param hamiltonPath The Hamilton Path through a graph where all nodes are Integers.
-	 * @param n The number of lists the path is to be split up in.
+	 * @param n The number of lists the path is to be split up in. If this is larger than the size of the Hamilton Path, it will be set to 
+	 * (hamiltonPath.size() - 1).
 	 * @return A list of lists of nodes. Each list of nodes is in ascending order of index in <code>hamiltonPath</code>
 	 *   while the lists themselves are in descending order of index of the first element in the list.<br>
 	 *   <br>
@@ -92,7 +93,7 @@ public class Tools {
 		List<Integer> path = new ArrayList<Integer>(hamiltonPath);
 		int length = path.size();
 		if (n > length){
-			n = length;
+			n = length - 1;
 		}
 		List<List<Integer>> result = new ArrayList<List<Integer>>();
 		// length of one slice

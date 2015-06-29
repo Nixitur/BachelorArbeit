@@ -10,7 +10,6 @@ import encoding.Encode;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.List;
 
@@ -39,7 +38,8 @@ public class WatermarkCreator implements Constants {
 	 * Creates a new WaterMarkCreator.
 	 * @param packageName The package that the class should have. 
 	 * @param graph The RPG that is to be embedded in the code.
-	 * @param noOfSubgraphs The number of subgraphs that <code>graph</code> should be split up into.
+	 * @param noOfSubgraphs The number of subgraphs that <code>graph</code> should be split up into. If this is larger than
+	 * the number of vertices in graph, this number will be set to the number of vertices.
 	 */
 	public WatermarkCreator(String packageName, DirectedGraph<Integer,DefaultEdge> graph, int noOfSubgraphs) {
 		_fullClassName = packageName+"."+CLASS_NAME;
@@ -56,20 +56,29 @@ public class WatermarkCreator implements Constants {
 	}
 	
 	/**
-	 * Creates and outputs the class.
-	 * @param out The target where the  class is output to.
+	 * Creates and outputs the class to the intended destination.
+	 * @return The number of build methods in this class, indexed from 0 to (returnValue - 1).
 	 * @throws IOException If it's impossible to output on the chosen OutputStream.
 	 */
-	public void create(OutputStream out) throws IOException{
+	public int create() throws IOException{
 		createFields();
 		createConstructor();
 		for (int i = 0; i < _splitNodes.size(); i++){
 			createBuildGi(i);
 		}
 		createMain();
+		String separator = File.separator;
+		int index = _fullClassName.lastIndexOf('.');
+		String packageName = _fullClassName.substring(0, index);
+		FileOutputStream out = new FileOutputStream(packageName+separator+CLASS_NAME+".class");
 		_cg.getJavaClass().dump(out);
+		return _splitNodes.size();
 	}
 	
+	/**
+	 * Returns the fully qualified class name, with packages and everything.
+	 * @return The class name.
+	 */
 	public String getClassName(){
 		return _fullClassName;
 	}
@@ -340,7 +349,7 @@ public class WatermarkCreator implements Constants {
 		Integer sourceVertex;
 		Integer targetVertex;
 		
-		// create list edge from last slice to this one
+		// create list edge from this one to last one
 		if (!thisIsG0){
 			sourceVertex = lastNodeInGi;
 			targetVertex = firstNodeInPrevious;
@@ -388,6 +397,9 @@ public class WatermarkCreator implements Constants {
 				il.append(InstructionConstants.AASTORE);
 			}
 		}
+		// TODO: This is just for testing
+		il.append(_factory.createPrintln("buildG"+i+" called"));
+		
 		il.append(InstructionFactory.createReturn(Type.VOID));
 		method.removeNOPs();
 		method.setMaxStack();
@@ -396,9 +408,9 @@ public class WatermarkCreator implements Constants {
 		il.dispose();		
 	}
 	
-	public static void main(String[] args){
+	public static void main(String[] args) throws IOException{
 		int w = 5;
-		int k = 3;
+		int k = 8;
 		if (args.length > 0) {
 			w = Integer.parseInt(args[0]);
 			if (args.length > 1) {
@@ -410,14 +422,6 @@ public class WatermarkCreator implements Constants {
 		
 		String packageName = "example";
 		WatermarkCreator creator = new WatermarkCreator(packageName, graph, k);
-		
-		String separator = File.separator;
-		String className = CLASS_NAME;
-		packageName = packageName.replace('.', separator.charAt(0));
-		try {
-			creator.create(new FileOutputStream(packageName+separator+className+".class"));
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		creator.create();
 	}
 }

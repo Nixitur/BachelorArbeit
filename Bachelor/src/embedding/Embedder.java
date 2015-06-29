@@ -12,11 +12,13 @@ import java.util.List;
 
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
 
 import tracing.*;
 
 /**
- * Instances of this class load a class file and execute the class found therein.
+ * An instance of this class loads a class file and executes the class found therein, collecting the TracePoints and finally replacing the TracePoints
  * @author Kaspar
  *
  */
@@ -26,7 +28,10 @@ public class Embedder {
 	private HashMap<TracePoint,JavaClass> traceToClass;
 	private HashMap<TracePoint,Method> traceToMethod;
 	private HashMap<JavaClass,ClassContainer> classToClassCont;
-	private String _watermarkClassName;
+	private final String _classPath;
+	private final String[] _args;
+	private final String _markMethodName;
+	private final String _className;
 
 	/**
 	 * Constructs a new Embedder which executes a class and identifies its TracePoints.
@@ -35,42 +40,70 @@ public class Embedder {
 	 * @param args The arguments to the main class' main method.
 	 * @param markMethodName the fully qualified name of the mark method(s).
 	 */
-	public Embedder(String classPath, String className, String[] args, String markMethodName, String watermarkClassName) {
-		tracePoints = runClassFile(classPath, className, args, markMethodName);
-		traceToClass = Tools.getClasses(tracePoints, classPath);
+	public Embedder(String classPath, String className, String[] args, String markMethodName) {
+		_classPath = classPath;
+		_className = className;
+		_args = args;
+		_markMethodName = markMethodName;
+	}
+	
+	/**
+	 * Runs the class provided in the constructor and extracts the TracePoints.
+	 * @return The number of TracePoints that have been found.
+	 */
+	public int run(){
+		tracePoints = runClassFile(_classPath, _className, _args, _markMethodName);
+		traceToClass = Tools.getClasses(tracePoints, _classPath);
 		System.out.println(Arrays.toString(tracePoints.toArray()));
-		_watermarkClassName = watermarkClassName;
+		return tracePoints.size();
+	}
+	
+	/**
+	 * Saves the modified classes with calls to the watermark class' build methods. run() must have been called before this method.
+	 * @param watermarkClassName The fully qualified name of the watermark class.
+	 * @param noOfBuildMethods The number of build methods the watermark class has, indexed from 0 to (noOfBuildMethods - 1).
+	 * @throws IOException If the files can not be saved.
+	 */
+	public void dump(String watermarkClassName, int noOfBuildMethods) throws IOException{
 		traceToMethod = getMethods();
-		//
 		classToClassCont = new HashMap<JavaClass,ClassContainer>();
-		setUpContainers();
-		processTracePoints(classPath);
+		setUpContainers(watermarkClassName, noOfBuildMethods);
+		processTracePoints(_classPath);
 	}
 	
 	/**
 	 * Initializes and builds the <code>ClassContainer</code>s for the classes that contain the <code>TracePoint</code>s in <code>tracePoints</code>.
 	 * Also sets up the HashMap classToClassCont that maps each JavaClass to the ClassContainer that contains it.
+	 * @param watermarkClassName The fully qualified name of the watermark class.
+	 * @param noOfBuildMethods The number of build methods the watermark class has, indexed from 0 to (noOfBuildMethods - 1).
 	 */
-	private void setUpContainers(){
+	private void setUpContainers(String watermarkClassName, int noOfBuildMethods){
+		int indexOfCurrentTrace = 0;
 		for (TracePoint trace : tracePoints){
+			if (indexOfCurrentTrace >= noOfBuildMethods){
+				break;
+			}
 			JavaClass clazz = traceToClass.get(trace);
 			Method method = traceToMethod.get(trace);
 			ClassContainer classCont;
 			if (!classToClassCont.containsKey(clazz)){
-				classCont = new ClassContainer(clazz, _watermarkClassName);
+				classCont = new ClassContainer(clazz, watermarkClassName);
 				classToClassCont.put(clazz, classCont);
 			} else {
 				classCont = classToClassCont.get(clazz);
 			}
 			classCont.newMethodContainer(method);
 			classCont.addTracePoint(trace);
+			indexOfCurrentTrace++;
 		}
 	}
 	
 	/**
 	 * Processes the trace points and saves the modified classes. 
+	 * @param classPath The path from which all necessary classes can be loaded.
+	 * @throws IOException If the file can not be saved.
 	 */
-	private void processTracePoints(String classPath){
+	private void processTracePoints(String classPath) throws IOException{
 		for (ClassContainer cont : classToClassCont.values()){
 			cont.processTracePoints();
 			String fullName = cont.getClassName();
@@ -78,15 +111,15 @@ public class Embedder {
 			String thisPackage = fullName.substring(0, index);
 			String thisClass = fullName.substring(index+1,fullName.length());
 			thisPackage = thisPackage.replace('.', File.separator.charAt(0));
-			try {
-				//TODO: Get the actual path to the .class file as assuming they are all on one path may be wrong.
-				//new FileOutputStream("this.class");
-				OutputStream out = new FileOutputStream(classPath+File.separator+thisPackage+File.separator+thisClass+".class");
-				cont.getJavaClass().dump(out);
-				out.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			byte[] bytecode = cont.getJavaClass().getBytes();
+			ClassReader cr = new ClassReader(bytecode);
+			ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
+			cr.accept(cw, 0);
+			bytecode = cw.toByteArray();
+			//TODO: Get the actual path to the .class file as assuming they are all on one path may be wrong.				
+			OutputStream out = new FileOutputStream(classPath+File.separator+thisPackage+File.separator+thisClass+".class");
+			out.write(bytecode);
+			out.close();
 		}
 	}
 	
@@ -129,21 +162,4 @@ public class Embedder {
 		}
 		return result;
 	}
-	
-	public static void main(String[] args){
-		String classPath = args[0];
-		String className = args[1];
-		String markMethodName = args[args.length-1];
-		String[] arguments = Arrays.copyOfRange(args, 2, args.length-1);
-		new Embedder(classPath,className,arguments, markMethodName, "example.Watermark");
-//		try {
-//			ClassParser parser = new ClassParser("example/Nodexample.class");
-//			JavaClass clazz = parser.parse();
-//			BCELifier bcel = new BCELifier(clazz,System.out);
-//			bcel.start();
-//		} catch (IOException e) {
-//			e.printStackTrace();
-//		}
-	}
-
 }
