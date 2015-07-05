@@ -170,7 +170,7 @@ public class WatermarkCreator implements Constants {
 	 *  
 	 * @param treeNeighbors
 	 * @param il The <code>InstructionList</code> that is to be appended to.
-	 * @param vertexToVarIndex
+	 * @param vertexToVarIndex Assigns to each vertex a local variable index.
 	 */
 	private void createTreeNeighbors(TreeNeighborMap treeNeighbors, InstructionList il, VertexToVarIndexMap vertexToVarIndex){
 		List<Integer> inNeighbors;
@@ -180,23 +180,44 @@ public class WatermarkCreator implements Constants {
 			for (Integer inNeighbor : inNeighbors){
 				// if this inNeighbor of vertex hasn't been stored yet
 				if (vertexToVarIndex.get(inNeighbor) == null){
-					// push array on stack
-					il.append(getArray());
-					// push desired index on stack
-					il.append(new PUSH(_cp, inNeighbor.intValue()));
-					// load array[index] and push it on stack
-					il.append(InstructionConstants.AALOAD);
-					// and store it in local variable
-					il.append(InstructionFactory.createStore(Type.OBJECT, vertexToVarIndex.getLocalVarIndex()));
-					vertexToVarIndex.put(inNeighbor);
+					createLoadFromArray(il,inNeighbor,vertexToVarIndex);
 				}
 			}
 		}
 	}
 	
 	/**
+	 * Creates code that checks if the entry in the array at a specified index is <tt>null</tt>. If it is, the code
+	 * creates a new Watermark instance. If it isn't, that entry is loaded. Whatever the case, the resulting Watermark
+	 * is then stored. Essentially, it creates<br>
+	 * <tt>n_arrayIndex = (array[arrayIndex] == null) ? new Watermark() : array[arrayIndex];</tt>
+	 * @param il The InstructionList that is to be appended to.
+	 * @param arrayIndex The specified index.
+	 * @param vertexToVarIndex Assigns to each vertex a local variable index.
+	 */
+	private void createLoadFromArray(InstructionList il, int arrayIndex, VertexToVarIndexMap vertexToVarIndex){
+		il.append(getArray());
+		il.append(new PUSH(_cp, arrayIndex));
+		il.append(InstructionConstants.AALOAD);
+		  BranchInstruction ifArrayEntryNonNull = InstructionFactory.createBranchInstruction(Constants.IFNONNULL,null);
+		il.append(ifArrayEntryNonNull);
+		// the following is if it IS null
+		createNewNode(il);
+		  BranchInstruction gotoEnd = InstructionFactory.createBranchInstruction(Constants.GOTO, null);
+		il.append(gotoEnd);
+		// the following is if it is NOT null
+		InstructionHandle notNullBranch = il.append(getArray());
+		ifArrayEntryNonNull.setTarget(notNullBranch);
+		il.append(new PUSH(_cp, arrayIndex));
+		il.append(InstructionConstants.AALOAD);
+		InstructionHandle end = il.append(InstructionFactory.createStore(Type.OBJECT, vertexToVarIndex.getLocalVarIndex()));
+		vertexToVarIndex.put(arrayIndex);
+		gotoEnd.setTarget(end);
+	}
+	
+	/**
 	 * Creates code that checks whether <code>array</code> is null. If it is, a new array is built and filled with
-	 * new Watermarks.
+	 * <tt>null</tt>
 	 * @param il The <code>InstructionList</code> that is to be appended to.
 	 */
 	private void createCheckIfArrayNull(InstructionList il){
@@ -211,36 +232,6 @@ public class WatermarkCreator implements Constants {
 		il.append(_factory.createNewArray(_nodeType, (short) 1));
 		// take what is on top of the stack and save it as the field ARRAY_NAME
 		il.append(_factory.createFieldAccess(_fullClassName, ARRAY_NAME, new ArrayType(_nodeType,1), PUTSTATIC));
-		
-		// -- Start of the for-loop --
-		// Push 0 on stack
-		il.append(new PUSH(_cp, 0));
-		// store 0 in local variable 0
-		il.append(InstructionFactory.createStore(Type.INT, 0));
-		
-		// -- The for-loop itself --
-		BranchInstruction gotoCheckInFor = InstructionFactory.createBranchInstruction(Constants.GOTO, null);
-		il.append(gotoCheckInFor);
-		// push array on stack		
-		InstructionHandle getArrayInstruction = il.append(getArray());
-		// push local variable 0 on stack
-		il.append(InstructionFactory.createLoad(Type.INT, 0));
-		// create a new node and push it on stack
-		createNewNode(il);
-		// store node at index in array
-		il.append(InstructionConstants.AASTORE);
-		// increment local variable 0 by 1
-		il.append(new IINC(0,1));
-		
-		// -- The check in the for-loop --
-		// push local variable 0 on stack
-		InstructionHandle startOfCheck = il.append(InstructionFactory.createLoad(Type.INT, 0));
-		// push highest allowed index of array on stack 
-		il.append(new PUSH(_cp, _noOfVertices-1));
-		// if counter smaller than the number of vertices -1, go back to the for loop		
-		BranchInstruction ifVarSmallerThan = InstructionFactory.createBranchInstruction(Constants.IF_ICMPLT, getArrayInstruction);
-		il.append(ifVarSmallerThan);
-		gotoCheckInFor.setTarget(startOfCheck);
 		
 		// Just wait for a bit
 		InstructionHandle nop = il.append(InstructionConstants.NOP);
@@ -326,15 +317,7 @@ public class WatermarkCreator implements Constants {
 
 		// If this is not G_0
 		if (!thisIsG0){
-			// push array on stack
-			il.append(getArray());
-			// put desired index on stack
-			il.append(new PUSH(_cp, firstNodeInPrevious.intValue()));
-			// load array[index] and push it on stack
-			il.append(InstructionConstants.AALOAD);
-			// and store it in local variable 0
-			il.append(InstructionFactory.createStore(Type.OBJECT, 0));
-			vertexToVarIndex.put(firstNodeInPrevious);
+			this.createLoadFromArray(il, firstNodeInPrevious, vertexToVarIndex);
 		}
 		
 		// Create the Nodes of G_i
@@ -390,10 +373,10 @@ public class WatermarkCreator implements Constants {
 					// push object to be stored on stack
 					il.append(InstructionFactory.createLoad(Type.OBJECT, index));
 				} else {
-					// push new node on stack
-					createNewNode(il);					
+					// push null on stack
+					il.append(InstructionConstants.ACONST_NULL);				
 				}
-				// store local var or new Watermark in array at index j
+				// store local var or null in array at index j
 				il.append(InstructionConstants.AASTORE);
 			}
 		}
@@ -410,7 +393,7 @@ public class WatermarkCreator implements Constants {
 	
 	public static void main(String[] args) throws IOException{
 		int w = 5;
-		int k = 8;
+		int k = 3;
 		if (args.length > 0) {
 			w = Integer.parseInt(args[0]);
 			if (args.length > 1) {

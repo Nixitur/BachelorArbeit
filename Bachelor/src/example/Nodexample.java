@@ -41,9 +41,6 @@ public class Nodexample {
 	public static void buildG0(){
 		if (array == null){
 			array = new Nodexample[8];
-			for (int i = 0; i < 8; i++){
-				array[i] = new Nodexample();
-			}
 		}
 		// nodes of G0
 		Nodexample n1 = new Nodexample();
@@ -58,12 +55,9 @@ public class Nodexample {
 	public static void buildG1(){
 		if (array == null){
 			array = new Nodexample[8];
-			for (int i = 0; i < 8; i++){
-				array[i] = new Nodexample();
-			}
 		}
 		// firstOfPrevious
-		Nodexample n1 = array[1];
+		Nodexample n1 = (array[1] == null) ? new Nodexample() : array[1];
 		// nodes of G1
 		Nodexample n4 = new Nodexample();
 		Nodexample n3 = new Nodexample();
@@ -83,8 +77,8 @@ public class Nodexample {
 		n2.e2 = n4;
 		
 		// n1, n2 finished so remove
-		array[1] = new Nodexample();
-		array[2] = new Nodexample();
+		array[1] = null;
+		array[2] = null;
 		
 		// n4,n3 still remaining
 		array[3] = n3;
@@ -93,20 +87,17 @@ public class Nodexample {
 	public static void buildG2(){
 		if (array == null){
 			array = new Nodexample[8];
-			for (int i = 0; i < 8; i++){
-				array[i] = new Nodexample();
-			}
 		}
 		// firstOfPrevious
-		Nodexample n4 = array[4];
+		Nodexample n4 = (array[4] == null) ? new Nodexample() : array[4];
 		// nodes of G2
 		Nodexample n7 = new Nodexample();
 		Nodexample n6 = new Nodexample();
 		Nodexample n5 = new Nodexample();
 		// inNeighbors of G2 not in G2
 		// n4 already declared
-		Nodexample n0 = array[0];
-		Nodexample n3 = array[3];
+		Nodexample n0 = (array[0] == null) ? new Nodexample() : array[0];
+		Nodexample n3 = (array[3] == null) ? new Nodexample() : array[3];
 		
 		// list edge to G1
 		n5.e1 = n4;
@@ -125,11 +116,11 @@ public class Nodexample {
 		// everything finished
 		array[7] = n7;
 		//array[7] = new Nodexample();
-		array[6] = new Nodexample();
-		array[5] = new Nodexample();
-		array[4] = new Nodexample();
-		array[0] = new Nodexample();
-		array[3] = new Nodexample();
+		array[6] = null;
+		array[5] = null;
+		array[4] = null;
+		array[0] = null;
+		array[3] = null;
 	}
 	
 	public static void main(String[] args){

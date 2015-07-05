@@ -6,6 +6,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import util.QueueThread;
+
 import com.sun.jdi.IntegerValue;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
@@ -40,7 +42,7 @@ public class MarkTraceThread extends QueueThread {
 	 *  for example "mark" would not be correct, but "myPackage.Marker.mark" would be.
 	 */
 	public MarkTraceThread(VirtualMachine vm, String[] excludes, String markMethodName) {
-		super(vm, excludes);
+		super(vm, excludes, ACTIVATE_METHOD_ENTRY_REQUEST);
 		this.markMethodName = markMethodName;
 		tracePoints = new LinkedHashSet<TracePoint>();
 		toBeDeleted = new HashSet<TracePoint>();
@@ -54,7 +56,7 @@ public class MarkTraceThread extends QueueThread {
 	 * @param event The event that is received.
 	 * @throws UnsupportedArgumentException if the call to the mark method has too many arguments or arguments of the wrong type.
 	 */
-	void processEvent(Event event) {
+	public void processMethodEvent(Event event) {
 		if (!(event instanceof MethodEntryEvent)){
 			return;
 		}
@@ -104,7 +106,7 @@ public class MarkTraceThread extends QueueThread {
 	 * Called if the target VM is disconnected. If this happens, duplicates are removed from <code>tracePoints</code> and they are enumerated
 	 * in the correct order.
 	 */
-	void processDisconnected() {
+	public void processDisconnected() {
 		removeDuplicates();
 		setIndices();
 	}
@@ -141,5 +143,13 @@ public class MarkTraceThread extends QueueThread {
 			trace.setIndex(index);
 			index++;
 		}
+	}
+
+	/**
+	 * Called if the VM is dying. In this case, absolutely nothing happens.
+	 */
+	@Override
+	public void processDeath() {
+		// do absolutely nothing
 	}
 }

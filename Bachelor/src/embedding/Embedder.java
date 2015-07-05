@@ -132,7 +132,7 @@ public class Embedder {
 	 * @return The TracePoints that are encountered in the execution of the main class.
 	 */
 	private List<TracePoint> runClassFile(String classPath, String className, String[] args, String markMethodName){
-		VMLauncher vmLauncher = new tracing.VMLauncher(classPath, className, args, markMethodName);
+		TraceVMLauncher vmLauncher = new tracing.TraceVMLauncher(classPath, className, args, markMethodName);
 		MarkTraceThread mtt = vmLauncher.getTraceThread();
 		
 		// Wait until the debuggee is done

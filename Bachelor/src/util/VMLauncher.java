@@ -1,4 +1,4 @@
-package tracing;
+package util;
 
 import java.io.IOException;
 import java.util.List;
@@ -11,35 +11,29 @@ import com.sun.jdi.connect.IllegalConnectorArgumentsException;
 import com.sun.jdi.connect.LaunchingConnector;
 import com.sun.jdi.connect.VMStartException;
 
+/**
+ * Instances of this class simply launch a VirtualMachine for a given class. This class is designed to be extended by implementations
+ * that actually do something.
+ * @author Kaspar
+ *
+ */
 public class VMLauncher {
-	
-
-	private MarkTraceThread mtt;
 	private VirtualMachine vm;
-	private String[] excludes = {"java.*", "javax.*", "sun.*", "com.sun.*", "org.jpgrapht.graph.*",
-			"org.jgrapht.*", "java.nio.*", "oracle.*", "org.objectweb.asm.*", "javax.swing.*",
-			"jdk.internal.org.*"};
 
 	/**
 	 * Creates a new <code>VMLauncher</code> which immediately launches the Java Virtual Machine for class <code>className</code> and arguments
-	 * <code>args</code>. Furthermore, a <code>MarkTraceThread</code> is started which tracks calls to a mark method.
+	 * <code>args</code>. The VM contained herein is automatically suspended.
 	 * @param classPath The classpath by which the class may be executed.
 	 * @param className The fully qualified name of the to be executed class.
 	 * @param args The arguments to the class' main method.
-	 * @param markMethodName The full name of the mark method. This needs to contain the package as well as the class, so
-	 *  for example, "mark" would not be correct, but "myPackage.Marker.mark" would be if myPackage is a package containing a class Marker
-	 *  containing a method mark.
 	 */
-	public VMLauncher(String classPath, String className, String[] args, String markMethodName) {
+	public VMLauncher(String classPath, String className, String[] args) {
 		this.vm = launchVMAndSuspend(classPath, className,args);
 		Process process = vm.process();
 		Thread errThread = new InToOutThread(process.getErrorStream(), System.err);
 		Thread outThread = new InToOutThread(process.getInputStream(), System.out);
-		mtt = new MarkTraceThread(vm, excludes, markMethodName);
 		errThread.start();
-		outThread.start();		
-		mtt.start();
-		vm.resume();
+		outThread.start();
 	}
 	
 	/**
@@ -85,7 +79,7 @@ public class VMLauncher {
 	 * @param args The arguments to the class' main method.
 	 * @return
 	 */
-	VirtualMachine launchVMAndSuspend(String classPath, String className, String[] args){		
+	public VirtualMachine launchVMAndSuspend(String classPath, String className, String[] args){		
 		StringBuffer classAndArgsBuf = new StringBuffer(className);
 		// The main class and its command line arguments
 		for (int i = 0; i < args.length; i++){
@@ -106,14 +100,6 @@ public class VMLauncher {
         } catch (VMStartException e) {
             throw new Error("Target VM failed to initialize: "+ e.getMessage());
         }
-	}
-	
-	/**
-	 * Returns the <code>MarkTraceThread</code> that waits for calls to a mark-function.
-	 * @return the <code>MarkTraceThread</code>
-	 */
-	public MarkTraceThread getTraceThread(){
-		return mtt;
 	}
 	
 	public VirtualMachine getVM(){
