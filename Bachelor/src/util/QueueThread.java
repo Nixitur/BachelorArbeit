@@ -23,6 +23,8 @@ public abstract class QueueThread extends Thread {
 	public static final int ACTIVATE_METHOD_ENTRY_REQUEST = -1;
 	public static final int ACTIVATE_METHOD_EXIT_REQUEST = 1;
 	
+	public boolean quitNow = false;
+	
 	/**
 	 * Creates a new <code>QueueThread</code> which observes a certain <code>VirtualMachine</code> for <code>MethodEntryEvent</code>s whose
 	 * methods are not in classes matching the pattern in <code>excludes</code>.
@@ -60,11 +62,15 @@ public abstract class QueueThread extends Thread {
 	 */
 	public void run() {
 		EventQueue queue = vm.eventQueue();
+		everything:
 		while(true){
 			try {
 				EventSet eventSet = queue.remove();
 				EventIterator it = eventSet.eventIterator();
 				while (it.hasNext()){
+					if (quitNow){
+						break everything;
+					}
 					Event nextEvent = it.nextEvent();
 					if (nextEvent instanceof VMDeathEvent){
 						processDeath();

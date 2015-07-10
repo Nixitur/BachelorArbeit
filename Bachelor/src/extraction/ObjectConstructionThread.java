@@ -1,13 +1,8 @@
 package extraction;
 
-import java.util.List;
-import java.util.Map;
-
-import com.sun.jdi.Field;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
-import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.event.Event;
 import com.sun.jdi.event.MethodExitEvent;
@@ -16,11 +11,13 @@ import util.QueueThread;
 
 public class ObjectConstructionThread extends QueueThread {
 	
+	private VirtualMachine vm;
 	private RingBuffer<ObjectReference> constructedObjects;
 	private static final int BUFFER_SIZE = 1000;
 
 	public ObjectConstructionThread(VirtualMachine vm, String[] excludes) {
 		super(vm, excludes,ACTIVATE_METHOD_EXIT_REQUEST);
+		this.vm = vm;
 		constructedObjects = new RingBuffer<ObjectReference>(BUFFER_SIZE);
 	}
 
@@ -42,6 +39,14 @@ public class ObjectConstructionThread extends QueueThread {
 			e1.printStackTrace();
 		}
 	}
+	
+	public RingBuffer<ObjectReference> getObjects() throws Exception{
+		if (this.isAlive()){
+			throw new Exception("The ring buffer is getting changed right now, so you may not retrieve the constructed objects "
+					+ "until this thread is no longer alive.");
+		}
+		return constructedObjects;
+	}
 
 	@Override
 	public void processDisconnected() {
@@ -50,10 +55,7 @@ public class ObjectConstructionThread extends QueueThread {
 
 	@Override
 	public void processDeath() {
-		for (ObjectReference or : constructedObjects){
-			List<Field> fields = or.referenceType().allFields();
-			Map<Field, Value> values = or.getValues(fields);
-			values.getClass();
-		}
+		quitNow = true;
+		vm.suspend();
 	}
 }

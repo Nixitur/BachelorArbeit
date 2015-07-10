@@ -16,11 +16,17 @@ public class ExtractVMLauncher extends VMLauncher {
 		VirtualMachine vm = getVM();
 		oct = new ObjectConstructionThread(vm,excludes);
 		oct.start();
-		vm.resume();
+		vm.resume();	
+	}
+	
+	public ObjectConstructionThread getObjectConstructionThread(){
+		return oct;
 	}
 	
 	public static void main(String[] args){
-		new ExtractVMLauncher(".", "example.Example", new String[] {"test"});
+		ExtractVMLauncher extract = new ExtractVMLauncher(".", "example.Example", new String[] {"test"});
+		while (extract.oct.isAlive()){}
+		extract.getVM().dispose();
 	}
 
 }

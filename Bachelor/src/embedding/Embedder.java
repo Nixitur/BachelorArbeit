@@ -52,7 +52,7 @@ public class Embedder {
 	 * @return The number of TracePoints that have been found.
 	 */
 	public int run(){
-		tracePoints = runClassFile(_classPath, _className, _args, _markMethodName);
+		tracePoints = runClassFile();
 		traceToClass = Tools.getClasses(tracePoints, _classPath);
 		System.out.println(Arrays.toString(tracePoints.toArray()));
 		return tracePoints.size();
@@ -131,8 +131,8 @@ public class Embedder {
 	 * @param markMethodName The fully qualified name of the mark method.
 	 * @return The TracePoints that are encountered in the execution of the main class.
 	 */
-	private List<TracePoint> runClassFile(String classPath, String className, String[] args, String markMethodName){
-		TraceVMLauncher vmLauncher = new tracing.TraceVMLauncher(classPath, className, args, markMethodName);
+	private List<TracePoint> runClassFile(){
+		TraceVMLauncher vmLauncher = new tracing.TraceVMLauncher(_classPath, _className, _args, _markMethodName);
 		MarkTraceThread mtt = vmLauncher.getTraceThread();
 		
 		// Wait until the debuggee is done
