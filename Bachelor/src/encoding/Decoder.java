@@ -52,6 +52,7 @@ public class Decoder{
 		for (int i = 0; i < size; i++){
 			key = hamiltonPath.get(i);
 			vertexNames.put(key, size-i-2);
+			hamiltonPath.set(i, size-i-2);
 		}
 		DirectedGraph<Integer,DefaultEdge> newGraph = new SimpleDirectedGraph<Integer,DefaultEdge>(DefaultEdge.class);
 		// Fill newGraph with correctly labeled vertices 

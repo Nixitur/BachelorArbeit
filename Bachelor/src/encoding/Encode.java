@@ -135,4 +135,14 @@ public class Encode{
 		}
 		return graph;
 	}
+	
+	public static void main(String[] args){
+		int w = 5;
+		try {
+			w = Integer.parseInt(args[0]);
+		} catch (Exception e){}
+		int[] sip = encodeWToSIP(w);
+		DirectedGraph<Integer,DefaultEdge> rpg = encodeSIPtoRPG(sip);
+		System.out.println(rpg);
+	}
 }
