@@ -9,6 +9,7 @@ import org.jgrapht.graph.DefaultEdge;
 import encoding.Decoder;
 import encoding.GraphStructureException;
 import extraction.Extractor;
+import extraction.fixing.PartialRPG;
 
 public class Main {
 
@@ -19,7 +20,7 @@ public class Main {
 			return;
 		}
 		if (args[0].equals("encode")){
-			int w = 5;
+			int w = 23;
 			String packageName = "example";
 			int[] sip = encoding.Encode.encodeWToSIP(w);
 			DirectedGraph<Integer, DefaultEdge> graph = encoding.Encode.encodeSIPtoRPG(sip);
@@ -35,10 +36,10 @@ public class Main {
 		}
 		if (args[0].equals("decode")){
 			Extractor ext = new Extractor(".", "example.Example", new String[] {"test"});
-			List<DirectedGraph<Integer,DefaultEdge>> rpgList = ext.run();
+			List<PartialRPG> rpgList = ext.run();
 			ext.quitVM();
 
-			for (DirectedGraph<Integer,DefaultEdge> rpg : rpgList){
+			for (PartialRPG rpg : rpgList){
 				try {
 					Decoder decoder = new Decoder(rpg);
 					int wNew = decoder.decodeRPGBento();

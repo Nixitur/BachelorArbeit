@@ -33,7 +33,12 @@ public class ObjectConstructionThread extends QueueThread {
 		}
 		try {
 			ObjectReference thiz = mExE.thread().frame(0).thisObject();
-			constructedObjects.add(thiz);
+			// Don't even save objects that are not valid nodes.
+			// This might make it take longer, but requires less disabling of GC when edges are broken
+			ObjectNode node = ObjectNode.checkIfValidRPGNode(thiz);
+			if (node != null){
+				constructedObjects.add(thiz);
+			}
 		} catch (IncompatibleThreadStateException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();

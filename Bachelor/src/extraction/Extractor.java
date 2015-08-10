@@ -4,11 +4,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import com.sun.jdi.ObjectReference;
+
+import extraction.fixing.PartialRPG;
 
 /**
  * This class is for extracting RPG graphs embedded in a program with the method of Chroni and Nikolopoulos.
@@ -16,6 +19,7 @@ import com.sun.jdi.ObjectReference;
  *
  */
 public class Extractor {
+	//TODO: Basically, allow "root" to also refer to the SECOND node, a body node, instead of the root node, to deal with cases where the first edge is missing.
 	
 	private final String _classPath;
 	private final String[] _args;
@@ -39,10 +43,10 @@ public class Extractor {
 	 * Executes the given main class, extracting all embedded RPGs.
 	 * @return A list of all RPGS that are embedded in the program.
 	 */
-	public List<DirectedGraph<Integer,DefaultEdge>> run(){
-		List<ObjectReference> constructedObjects = extractConstructedObjects();
-		List<ObjectNode> possibleRoots = getPossibleRoots(constructedObjects);
-		List<DirectedGraph<Integer,DefaultEdge>> rpgList = getPossibleGraphs(possibleRoots);
+	public List<PartialRPG> run(){
+		List<ObjectNode> constructedNodes = extractConstructedNodes();
+		List<ObjectNode> possibleRoots = getPossibleRoots(constructedNodes);
+		List<PartialRPG> rpgList = getPossibleGraphs(possibleRoots);
 		return rpgList;
 	}
 	
@@ -53,15 +57,15 @@ public class Extractor {
 	 * @param possibleRoots The possible root nodes from where the search starts.
 	 * @return A list of possibly embedded graphs.
 	 */
-	private List<DirectedGraph<Integer,DefaultEdge>> getPossibleGraphs(List<ObjectNode> possibleRoots){
-		List<DirectedGraph<Integer,DefaultEdge>> graphList = new ArrayList<DirectedGraph<Integer,DefaultEdge>>();
+	private List<PartialRPG> getPossibleGraphs(List<ObjectNode> possibleRoots){
+		List<PartialRPG> graphList = new ArrayList<PartialRPG>();
 		for (ObjectNode root : possibleRoots){
 			// This is for checking if a newly found ObjectReference is actually already in the vertex set without
 			// having to construct an ObjectNode first
 			Map<ObjectReference,Integer> objectToIndex = new HashMap<ObjectReference,Integer>();
 			// A running index for the vertices; this has nothing to do with the RPG numbering
 			Integer index = 0;
-			DirectedGraph<Integer,DefaultEdge> result = new SimpleDirectedGraph<Integer,DefaultEdge>(DefaultEdge.class);
+			PartialRPG result = new PartialRPG();
 			
 			objectToIndex.put(root.or, index);
 			result.addVertex(index);
@@ -72,10 +76,9 @@ public class Extractor {
 			ObjectReference nextObject = root.getChildren().get(0);
 			ObjectNode lastNode = root;
 			ObjectNode currentNode = ObjectNode.checkIfValidRPGNode(nextObject);
-			while (currentNode != null){
+			while (currentNode != null){				
 				index++;
-				ObjectReference currentObject = currentNode.or;
-				objectToIndex.put(currentObject, index);
+				// The index for the currentNode
 				result.addVertex(index);
 				
 				// add edges from lastNode; this is possible because all outneighbors of lastNode should
@@ -84,37 +87,57 @@ public class Extractor {
 				Integer currentNodeIndex = new Integer(index);
 				// add list edge
 				result.addEdge(lastNodeIndex, currentNodeIndex);
-				if (lastNode.isValidBodyNode()){
+				// objectToIndex currently contains all objects up to lastNode; to check if it's unbroken, we need to exclude lastNode
+				objectToIndex.remove(lastNode.or);
+				int bodyNodeType = lastNode.isValidBodyNode(objectToIndex.keySet());
+				if (bodyNodeType == ObjectNode.BODY_NODE_UNBROKEN){
 					// add back/tree edge
 					Integer backNeighborIndex = objectToIndex.get(lastNode.getChildren().get(1));
 					result.addEdge(lastNodeIndex, backNeighborIndex);
 				}
-				if (!currentNode.isValidBodyNode()){
+				// and add it back in
+				objectToIndex.put(lastNode.or, lastNodeIndex);
+				bodyNodeType = currentNode.isValidBodyNode(objectToIndex.keySet());
+
+				ObjectReference currentObject = currentNode.or;
+				objectToIndex.put(currentObject, index);
+				
+				if (bodyNodeType != ObjectNode.BODY_NODE_UNBROKEN){
+					// If the current node is a foot node, just stop right there as we've found it all
 					if (currentNode.isValidFootNode()){
 						success = true;
-					} else {
-						success = false;
+						break;
 					}
-					break;
+					// If this body node can not be fixed or is just not a body node, stop
+					if (bodyNodeType == ObjectNode.BODY_NODE_WRONG){
+						success = false;
+						break;
+					}
+					// If this partial RPG is already missing an edge and this body node is also missing an edge, we can't fix it
+					if (result.type != PartialRPG.RPG_TYPE_UNBROKEN){
+						success = false;
+						break;
+					}
+					// From here on out, the RPG is, as of now, unbroken and currentNode is a body node with a missing edge
+					
+					// If this body node is missing a back edge, we can still continue and find the rest of the nodes 
+					if (bodyNodeType == ObjectNode.BODY_NODE_MISSING_BACK_EDGE){
+						result.type = PartialRPG.RPG_TYPE_MISSING_BACK_EDGE;
+					// If this body node is missing a list edge, we can NOT continue, so we break here
+					} else if (bodyNodeType == ObjectNode.BODY_NODE_MISSING_LIST_EDGE){
+						result.type = PartialRPG.RPG_TYPE_MISSING_LIST_EDGE;
+						success = true;
+						break;
+					}
 				}
+				// At this point, currentNode is either unbroken or missing a back edge
+				ObjectReference listNeighbor = currentNode.getListNeighbor(objectToIndex.keySet());
+				ObjectReference backNeighbor = currentNode.getBackNeighbor(objectToIndex.keySet());
 				
-				// The outneighbors of currentNode
-				// Since nextNode is a valid body node, these two are both not null 
-				ObjectReference link1 = currentNode.getChildren().get(0);
-				ObjectReference link2 = currentNode.getChildren().get(1);
-				
-				boolean link1Null = (objectToIndex.get(link1) == null);
-				boolean link2Null = (objectToIndex.get(link2) == null);
-				// If link1 is via back (e2) node, but link2 isn't
-				if ((!link1Null) && (link2Null)){
+				if (listNeighbor != null){
 					lastNode = currentNode;
-					currentNode = ObjectNode.checkIfValidRPGNode(link2);
-				} else if ((!link2Null) && (link1Null)){
-					lastNode = currentNode;
-					currentNode = ObjectNode.checkIfValidRPGNode(link1);
+					currentNode = ObjectNode.checkIfValidRPGNode(listNeighbor);
 				} else {
-					// If both are null, there is no tree edge
-					// If both are not-null, there is no list edge
 					success = false;
 					break;
 				}
@@ -128,21 +151,30 @@ public class Extractor {
 	}
 	
 	/**
-	 * Executes the main class and gives back the last 1000 constructed objects.
-	 * @return A list of the last 1000 newly constructed ObjectReferences in the target VM.
+	 * Executes the main class and gives back the last 1000 constructed objects as nodes.
+	 * @return A list of the last 1000 newly constructed ObjectReferences, converted to ObjectNodes.
 	 */
-	private List<ObjectReference> extractConstructedObjects(){
+	private List<ObjectNode> extractConstructedNodes(){
 		launcher = new ExtractVMLauncher(_classPath,_className,_args);
 		ObjectConstructionThread oct = launcher.getObjectConstructionThread();
 		
 		while (oct.isAlive()){}
 		RingBuffer<ObjectReference> constructedObjects = null;
+		List<ObjectNode> constructedNodes = new ArrayList<ObjectNode>();
 		try {
 			constructedObjects = oct.getObjects();
-		} catch (Exception e) {
+			ObjectNode node = null;
+			for (ObjectReference or : constructedObjects){
+				node = ObjectNode.checkIfValidRPGNode(or);
+				if (node != null){
+					constructedNodes.add(node);
+				}
+			}
+		} catch (Exception e) {			
 			// can't happen because we specifically wait for oct to die
+			return null;
 		}
-		return new ArrayList<ObjectReference>(constructedObjects);
+		return constructedNodes;
 	}
 	
 	/**
@@ -150,10 +182,9 @@ public class Extractor {
 	 * @param constructedObjects A list of ObjectReferences where possible roots are hopefully stored in.
 	 * @return A list of possible root nodes.
 	 */
-	private List<ObjectNode> getPossibleRoots(List<ObjectReference> constructedObjects){
+	private List<ObjectNode> getPossibleRoots(List<ObjectNode> constructedNodes){
 		List<ObjectNode> possibleRoots = new ArrayList<ObjectNode>();
-		for (ObjectReference or : constructedObjects){
-			ObjectNode node = ObjectNode.checkIfValidRPGNode(or);
+		for (ObjectNode node : constructedNodes){
 			if ((node != null) && (node.isValidRootNode())){
 				possibleRoots.add(node);
 			}
@@ -172,7 +203,7 @@ public class Extractor {
 
 	public static void main(String[] args){
 		Extractor ext = new Extractor(".", "example.Example", new String[] {"test"});
-		List<DirectedGraph<Integer,DefaultEdge>> rpgList = ext.run();
+		List<PartialRPG> rpgList = ext.run();
 		System.out.println(rpgList);
 		ext.quitVM();
 	}
