@@ -1,4 +1,4 @@
-package tracing;
+package util;
 
 public class UnsupportedArgumentException extends Exception {
 	private static final long serialVersionUID = 1L;

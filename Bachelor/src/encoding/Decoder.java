@@ -13,15 +13,19 @@ import org.jgrapht.graph.EdgeReversedGraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 
+import util.GraphStructureException;
+
 /**
  * Instances of this class are decoders for a given reducible permutation graph. It can be decoded via the algorithm by Chroni and
  * Nikolopoulos or the one by Bento et al.
  * @author Kaspar
  *
  */
-public class Decoder{
-	private DirectedGraph<Integer,DefaultEdge> rpg;
-	private List<Integer> hamiltonPath;
+public class Decoder<V>{
+	private DirectedGraph<V,DefaultEdge> originalRPG;
+	private DirectedGraph<Integer,DefaultEdge> renamedRPG;
+	private List<V> originalHamiltonPath;
+	private List<Integer> renamedHamiltonPath;
 	private DirectedGraph<Integer,DefaultEdge> tree;
 	private Integer startNode;
 	
@@ -30,11 +34,11 @@ public class Decoder{
 	 * @param rpg The RPG to be decoded.
 	 * @throws GraphStructureException If <code>rpg</code> is not an RPG encoded with the algorithm of Chroni and Nikolopoulos.
 	 */
-	public Decoder(DirectedGraph<Integer,DefaultEdge> rpg) throws GraphStructureException{
-		this.rpg = rpg;
-		this.hamiltonPath = decodeRPGToHamiltonPath();
-		this.rpg = renameVertices();
-		this.startNode = hamiltonPath.get(0);
+	public Decoder(DirectedGraph<V,DefaultEdge> rpg) throws GraphStructureException{
+		this.originalRPG = rpg;
+		this.originalHamiltonPath = decodeRPGToHamiltonPath();
+		this.renamedRPG = renameVertices();
+		this.startNode = renamedHamiltonPath.get(0);
 		this.tree = decodeRPGToTree();
 	}
 	
@@ -45,26 +49,31 @@ public class Decoder{
 	 * @return The relabeled graph.
 	 */
 	private DirectedGraph<Integer,DefaultEdge> renameVertices(){
-		Map<Integer,Integer> vertexNames = new HashMap<Integer,Integer>();
-		int size = hamiltonPath.size();
-		Integer key;
+		Map<V,Integer> vertexNames = new HashMap<V,Integer>();
+		renamedHamiltonPath = new ArrayList<Integer>();
+		int size = originalHamiltonPath.size();
+		// Just fill up renamedHamiltonPath to be the same size as the original
+		for (int i = 0; i < size; i++){
+			renamedHamiltonPath.add(i);
+		}
+		V key;
 		// vertexNames maps the original vertex labels to the intended ones
 		for (int i = 0; i < size; i++){
-			key = hamiltonPath.get(i);
+			key = originalHamiltonPath.get(i);
 			vertexNames.put(key, size-i-2);
-			hamiltonPath.set(i, size-i-2);
+			renamedHamiltonPath.set(i, size-i-2);
 		}
 		DirectedGraph<Integer,DefaultEdge> newGraph = new SimpleDirectedGraph<Integer,DefaultEdge>(DefaultEdge.class);
 		// Fill newGraph with correctly labeled vertices 
-		for (Integer vertex : rpg.vertexSet()){
+		for (V vertex : originalRPG.vertexSet()){
 			newGraph.addVertex(vertexNames.get(vertex));
 		}
-		Integer source;
-		Integer target;
+		V source;
+		V target;
 		// Fill newGraph with correctly labeled edges
-		for (DefaultEdge edge : rpg.edgeSet()){
-			source = rpg.getEdgeSource(edge);
-			target = rpg.getEdgeTarget(edge);
+		for (DefaultEdge edge : originalRPG.edgeSet()){
+			source = originalRPG.getEdgeSource(edge);
+			target = originalRPG.getEdgeTarget(edge);
 			newGraph.addEdge(vertexNames.get(source), vertexNames.get(target));
 		}
 		return newGraph;
@@ -175,7 +184,7 @@ public class Decoder{
 	 */
 	public int decodeRPGBento(){
 		// The rpg has exactly 2n+3 nodes, from 2n+1 to -1
-		int n = (hamiltonPath.size() - 3) / 2;
+		int n = (renamedHamiltonPath.size() - 3) / 2;
 		List<Integer> children = new ArrayList<Integer>();
 		for (DefaultEdge edge : tree.outgoingEdgesOf(startNode)){
 			children.add(tree.getEdgeTarget(edge));
@@ -230,32 +239,32 @@ public class Decoder{
 	 * @throws GraphStructureException Thrown if <code>g</code> is not a proper RPG as encoded by the
 	 *      algorithm of Chroni and Nikolopoulos.
 	 */
-	private List<Integer> decodeRPGToHamiltonPath() throws GraphStructureException {
-		Integer header = null;
-		Integer footer = null;
+	private List<V> decodeRPGToHamiltonPath() throws GraphStructureException {
+		V header = null;
+		V footer = null;
 		
-		List<Integer> vertices = new ArrayList<Integer>(rpg.vertexSet());
+		List<V> vertices = new ArrayList<V>(originalRPG.vertexSet());
 		int outDegree;
-		for (Integer vertex : vertices){
-			outDegree = rpg.outDegreeOf(vertex);
+		for (V vertex : vertices){
+			outDegree = originalRPG.outDegreeOf(vertex);
 			if ((outDegree == 1) && (header == null)){
 				header = vertex;
 			} else if ((outDegree == 0) && (footer == null)){
 				footer = vertex;
 			} else if (outDegree != 2){
 				// There can be only one (header or footer) and only out-degrees up to 2 are allowed.
-				throw new GraphStructureException("Argument is not a proper RPG.");
+				throw new GraphStructureException();
 			}
 		}
 		
 		// Header and footer MUST exist. The smallest size of the RPG is 5 and it's always odd. 
 		if ((header == null) || (footer == null)
 				|| (vertices.size() < 5) || (vertices.size() % 2 == 0)){
-			throw new GraphStructureException("Argument is not a proper RPG.");
+			throw new GraphStructureException();
 		}
 		vertices.clear();
-		Iterator<Integer> iter = new DepthFirstIterator<Integer,DefaultEdge>(rpg,header);
-		Integer vertex;
+		Iterator<V> iter = new DepthFirstIterator<V,DefaultEdge>(originalRPG,header);
+		V vertex;
 		while (iter.hasNext()){
 			vertex = iter.next();
 			vertices.add(vertex);
@@ -269,14 +278,14 @@ public class Decoder{
 	 */
 	private DirectedGraph<Integer,DefaultEdge> decodeRPGToTree() {
 		// Don't want to overwrite hamiltonPath
-		List<Integer> hPath = new ArrayList<Integer>(hamiltonPath);
+		List<Integer> hPath = new ArrayList<Integer>(renamedHamiltonPath);
 		// Remove the last node
 		Integer footer = hPath.remove(hPath.size()-1);
-		rpg.removeVertex(footer);
+		renamedRPG.removeVertex(footer);
 		// Remove all list edges
 		for (int i = 1; i < hPath.size(); i++){
-			rpg.removeEdge(hPath.get(i-1), hPath.get(i));
+			renamedRPG.removeEdge(hPath.get(i-1), hPath.get(i));
 		}
-		return new EdgeReversedGraph<Integer,DefaultEdge>(rpg);		
+		return new EdgeReversedGraph<Integer,DefaultEdge>(renamedRPG);		
 	}
 }

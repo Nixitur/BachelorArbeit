@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import util.QueueThread;
+import util.UnsupportedArgumentException;
 
 import com.sun.jdi.IntegerValue;
 import com.sun.jdi.Location;

@@ -1,14 +1,16 @@
 package example;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
+import util.GraphStructureException;
+
 import encoding.Decoder;
-import encoding.GraphStructureException;
 import extraction.Extractor;
+import extraction.ObjectNode;
 import extraction.fixing.PartialRPG;
 
 public class Main {
@@ -36,12 +38,12 @@ public class Main {
 		}
 		if (args[0].equals("decode")){
 			Extractor ext = new Extractor(".", "example.Example", new String[] {"test"});
-			List<PartialRPG> rpgList = ext.run();
+			Set<PartialRPG> rpgList = ext.run();
 			ext.quitVM();
 
 			for (PartialRPG rpg : rpgList){
 				try {
-					Decoder decoder = new Decoder(rpg);
+					Decoder<ObjectNode> decoder = new Decoder<ObjectNode>(rpg);
 					int wNew = decoder.decodeRPGBento();
 					System.out.println("The embedded watermark is possibly "+wNew);
 				} catch (GraphStructureException e) {

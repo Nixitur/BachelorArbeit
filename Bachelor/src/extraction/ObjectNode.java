@@ -1,6 +1,7 @@
 package extraction;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -41,6 +42,9 @@ public class ObjectNode {
 	 */
 	public final ObjectReference or;
 	private final List<ObjectReference> children;
+	private static int dummyCount = 0;
+	private int dummyNumber;
+	private Set<Field> sameTypeFields;
 	
 	/**
 	 * Constructs a new ObjectNode. 
@@ -49,6 +53,8 @@ public class ObjectNode {
 	private ObjectNode(ObjectReference or) {
 		this.or = or;
 		children = new ArrayList<ObjectReference>();
+		dummyNumber = -1;
+		sameTypeFields = new HashSet<Field>();
 	}
 	
 	/**
@@ -93,6 +99,14 @@ public class ObjectNode {
 			// If the only child has not been found, there is no back edge
 			return BODY_NODE_MISSING_BACK_EDGE;
 		}
+	}
+	
+	/**
+	 * Checks if this ObjectNode is a valid foot node, i.e. has exactly zero outneighbors.
+	 * @return <tt>true</tt> if it's a valid foot node, false otherwise.
+	 */
+	public boolean isValidFootNode(){
+		return (children.size() == 0);
 	}
 	
 	/**
@@ -142,20 +156,13 @@ public class ObjectNode {
 	}
 	
 	/**
-	 * Checks if this ObjectNode is a valid foot node, i.e. has exactly zero outneighbors.
-	 * @return <tt>true</tt> if it's a valid foot node, false otherwise.
-	 */
-	public boolean isValidFootNode(){
-		return (children.size() == 0);
-	}
-	
-	/**
 	 * Returns the children of this ObjectNode which are ObjectReferences of the same type as <tt>this.or</tt> that are referenced
-	 * by a field value of <tt>this.or</tt>.
+	 * by a field value of <tt>this.or</tt>. This list is backed by this instance, so changes on it will reflect on the object. 
+	 * I do not recommend changing it.
 	 * @return A list of outneighbors of this ObjectNode.
 	 */
 	public List<ObjectReference> getChildren(){
-		return new ArrayList<ObjectReference>(children);
+		return children;
 	}
 	
 	/**
@@ -172,7 +179,8 @@ public class ObjectNode {
 		for (Field f : fields){
 			// The outneighbor's type must be the same as this node's
 			try {
-				if (f.type().equals(type)){						
+				if (f.type().equals(type)){
+					node.sameTypeFields.add(f);
 					countOfSameTypeFields++;
 					// only up to 2 edges are allowed
 					if (countOfSameTypeFields > 2){							
@@ -201,11 +209,77 @@ public class ObjectNode {
 	}
 	
 	/**
+	 * Updates the children.
+	 */
+	public void updateChildren(){
+		children.clear();
+		for (Field f : sameTypeFields){
+			Value value = or.getValue(f);
+			if (value != null){
+				ObjectReference valueOR = (ObjectReference) value;
+				children.add(valueOR);
+			}
+		}
+	}
+	
+	/**
+	 * Creates a dummy node. The ObjectReference that this is a wrapper for is always null, but all dummy nodes are different and will not count as equal.
+	 * @return A dummy node.
+	 */
+	public static ObjectNode createDummyNode(){
+		ObjectNode dummy = new ObjectNode(null);
+		dummy.dummyNumber = dummyCount;
+		dummyCount++;
+		return dummy;
+	}
+	
+	/**
 	 * Constructs a String representation of this ObjectNode
 	 * @return A String representation of this ObjectNode. This is the String representation of <tt>this.or</tt> followed by a new line
 	 *   and the String representation of the list of children and then another new line.
 	 */
 	public String toString(){
 		return or.toString()+"\n"+children.toString()+"\n";
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((children == null) ? 0 : children.hashCode());
+		result = prime * result + dummyNumber;
+		result = prime * result + ((or == null) ? 0 : or.hashCode());
+		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ObjectNode other = (ObjectNode) obj;
+		if (children == null) {
+			if (other.children != null)
+				return false;
+		} else if (!children.equals(other.children))
+			return false;
+		if (dummyNumber != other.dummyNumber)
+			return false;
+		if (or == null) {
+			if (other.or != null)
+				return false;
+		} else if (!or.equals(other.or))
+			return false;
+		return true;
 	}
 }

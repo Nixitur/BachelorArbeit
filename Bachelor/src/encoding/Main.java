@@ -1,6 +1,7 @@
 package encoding;
 
 import java.util.Arrays;
+
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
@@ -30,7 +31,7 @@ public class Main {
 		System.out.println("The graph is:\n"+graph.toString()+"\n");
 		try {
 			System.out.println("Now for the decoding of the graph...");
-			Decoder decoder = new Decoder(graph);
+			Decoder<Integer> decoder = new Decoder<Integer>(graph);
 			System.out.println("According to Bento, the number is: "+decoder.decodeRPGBento()+"\n");
 			
 			int[] sip2 = decoder.decodeRPGToSIP();

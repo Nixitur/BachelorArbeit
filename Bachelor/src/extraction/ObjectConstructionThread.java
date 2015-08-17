@@ -12,13 +12,27 @@ import util.QueueThread;
 public class ObjectConstructionThread extends QueueThread {
 	
 	private VirtualMachine vm;
-	private RingBuffer<ObjectReference> constructedObjects;
-	private static final int BUFFER_SIZE = 1000;
+	private RingBuffer<ObjectNode> constructedNodes;
 
-	public ObjectConstructionThread(VirtualMachine vm, String[] excludes) {
+	/**
+	 * Creates a new ObjectConstructionThread that tracks construction of objects in a target VM with a limited ring buffer.
+	 * @param vm The VM that this thread tracks.
+	 * @param excludes A list of exclusion strings for classes that are not to be traced.
+	 * @param size The size of the ring buffer.
+	 */
+	public ObjectConstructionThread(VirtualMachine vm, String[] excludes, int size) {
 		super(vm, excludes,ACTIVATE_METHOD_EXIT_REQUEST);
 		this.vm = vm;
-		constructedObjects = new RingBuffer<ObjectReference>(BUFFER_SIZE);
+		constructedNodes = new RingBuffer<ObjectNode>(size);
+	}
+	
+	/**
+	 * Creates a new ObjectConstructionThread that tracks construction of objects in a target VM with an unlimited FIFO buffer.
+	 * @param vm The VM that this thread tracks.
+	 * @param excludes A list of exclusion strings for classes that are not to be traced.
+	 */
+	public ObjectConstructionThread(VirtualMachine vm, String[] excludes){
+		this(vm,excludes,RingBuffer.UNLIMITED_SIZE);
 	}
 
 	@Override
@@ -35,9 +49,10 @@ public class ObjectConstructionThread extends QueueThread {
 			ObjectReference thiz = mExE.thread().frame(0).thisObject();
 			// Don't even save objects that are not valid nodes.
 			// This might make it take longer, but requires less disabling of GC when edges are broken
+			// Don't save the node, though
 			ObjectNode node = ObjectNode.checkIfValidRPGNode(thiz);
 			if (node != null){
-				constructedObjects.add(thiz);
+				constructedNodes.add(node);
 			}
 		} catch (IncompatibleThreadStateException e1) {
 			// TODO Auto-generated catch block
@@ -45,12 +60,12 @@ public class ObjectConstructionThread extends QueueThread {
 		}
 	}
 	
-	public RingBuffer<ObjectReference> getObjects() throws Exception{
+	public RingBuffer<ObjectNode> getNodes() throws Exception{
 		if (this.isAlive()){
 			throw new Exception("The ring buffer is getting changed right now, so you may not retrieve the constructed objects "
 					+ "until this thread is no longer alive.");
 		}
-		return constructedObjects;
+		return constructedNodes;
 	}
 
 	@Override
@@ -60,6 +75,9 @@ public class ObjectConstructionThread extends QueueThread {
 
 	@Override
 	public void processDeath() {
+		for (ObjectNode node : constructedNodes){
+			node.updateChildren();
+		}
 		quitNow = true;
 		vm.suspend();
 	}

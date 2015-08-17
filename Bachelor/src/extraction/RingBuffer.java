@@ -13,13 +13,23 @@ public class RingBuffer<E> extends LinkedList<E>{
 	private static final long serialVersionUID = 1L;
 	private final int _size;
 	
+	public static final int UNLIMITED_SIZE = -1;
+	
 	/**
-	 * Creates a new ring buffer with fixed size <tt>size</tt>.
+	 * Creates a new ring buffer with fixed size <tt>size</tt>. If a number smaller than 1 is given, it is unbounded.
 	 * @param size The size of this ring buffer.
 	 */
 	public RingBuffer(int size){
 		super();
 		_size = size;
+	}
+	
+	/**
+	 * Creates an unbounded ring buffer. So, basically, it's just a LinkedList, but less powerful.
+	 */
+	public RingBuffer(){
+		super();
+		_size = UNLIMITED_SIZE;
 	}
 	
 	/**
@@ -71,7 +81,8 @@ public class RingBuffer<E> extends LinkedList<E>{
 	@Override
 	public void addFirst(E e){
 		super.addFirst(e);
-		if (size() > _size){
+		// If _size is <= 0, just add it, not removing anything.
+		if ((_size > 0) && (size() > _size)){
 			removeLast();
 		}
 	}
