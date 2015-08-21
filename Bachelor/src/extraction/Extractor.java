@@ -48,14 +48,9 @@ public class Extractor {
 			Set<PartialRPG> subgraphs = heapGraph.getConnectedComponents();
 			Set<PartialRPG> toBeRemoved = new HashSet<PartialRPG>();
 			for (PartialRPG rpg : subgraphs){
-				try {
-					RSST rsst = rpg.getRSST();
+				if (rpg.checkForIntegrityAndFix()){
 					System.out.println("Type: "+rpg.type);
-					if (!rpg.checkIfRPGUnbroken(rsst)){
-						throw new GraphStructureException();
-					}
-				} catch (GraphStructureException e){
-					// If either rsst can not be found or RPG not unbroken, then it's simply not an RPG
+				} else {
 					toBeRemoved.add(rpg);
 					System.out.println("Not an RPG");
 				}

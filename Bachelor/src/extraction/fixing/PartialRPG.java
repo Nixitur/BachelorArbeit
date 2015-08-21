@@ -56,7 +56,25 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 		}
 	}
 	
-	public RSST getRSST() throws GraphStructureException{
+	/**
+	 * Reconstructs a missing list edge if it's the only missing edge and checks whether this graph is an RPG.
+	 * @return true if this is an RPG, false otherwise
+	 */
+	public boolean checkForIntegrityAndFix(){		
+		try {
+			// Sets the type field correctly and finds root and sink of the graph as well as source and target of missing list edge
+			RSST rsst = getRSST();
+			// Fix missing list edge if possible
+			reconstructHamiltonPath(rsst);
+			// With the list edges fixed, the final and most precise RPG-check can commence
+			return checkIfRPG(rsst.root);
+		} catch (Exception e) {
+			return false;
+		}
+		// TODO: Add fixing of tree edge which is complicated and requires all the Bento stuff
+	}
+	
+	private RSST getRSST() throws GraphStructureException{
 		int n = vertexSet().size();
 		int m = edgeSet().size();
 		
@@ -88,124 +106,143 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 			type = RPG_TYPE_MISSING_SINK;
 		} else if ((degree0Nodes.size() == 1) && (degree1Nodes.size() == 2)){
 			// any other list edge or any back edge missing
-			boolean backEdgeMissing = false;
 			if (m != 2*n-4){
 				throw new GraphStructureException();
 			}
 			rsst = new RSST();
 			ObjectNode v = degree1Nodes.get(0);
-			ObjectNode w = degree1Nodes.get(1);
 			rsst.sink = degree0Nodes.get(0);
-			Iterator<ObjectNode> vBFS = new BreadthFirstIterator<ObjectNode,DefaultEdge>(this,v);
-			Set<ObjectNode> reachedNodesV = new HashSet<ObjectNode>();
-			ObjectNode currentNode = null;		
-			while (vBFS.hasNext()){
-				currentNode = vBFS.next();
-				reachedNodesV.add(currentNode);
-				// If the sink is reachable by any of the 1-outdegree nodes, there can be no missing list edge, so it must be a missing back edge
-				if (currentNode == rsst.sink){
-					backEdgeMissing = true;
-					break;
-				}
-			}
-			if (currentNode == w){
-				rsst.root = v;
-				rsst.source = w;
-			}
-			if (backEdgeMissing){
+			if (isBackEdgeMissing(v,rsst.sink)){
 				type = RPG_TYPE_MISSING_BACK_EDGE;
 			} else {
-//				currentNode = null;
-//				Iterator<ObjectNode> wBFS = new BreadthFirstIterator<ObjectNode,DefaultEdge>(this,w);
-//				Set<ObjectNode> reachedNodesW = new HashSet<ObjectNode>();
-//				while (wBFS.hasNext()){
-//					currentNode = wBFS.next();
-//				}
-//				if (currentNode == v){
-//					root = w;
-//					source = v;
-//				}
-//				// If v is not reachable from w or vice versa. Or if both nodes are both not the last one to be reached by the other one. 
-//				if ((!reachedNodesV.contains(w)) || (!reachedNodesW.contains(v)) || (root == null)){
-//					throw new GraphStructureException();
-//				}
-//				type = RPG_TYPE_MISSING_LIST_EDGE;
-				
-				// THIS DOESN'T ACTUALLY WORK YET
-				throw new GraphStructureException("Missing list edges other than the first or last one not yet supported.");
+				type = RPG_TYPE_MISSING_LIST_EDGE;
 			}
 		}
 		if ((type == RPG_TYPE_MISSING_BACK_EDGE) || (type == RPG_TYPE_MISSING_LIST_EDGE) || (type == RPG_TYPE_MISSING_ROOT)){
-			// In all these cases, the sink has been found
-			DirectedGraph<ObjectNode,DefaultEdge> transposedGraph = new EdgeReversedGraph<ObjectNode,DefaultEdge>(this);
-			Iterator<ObjectNode> sinkIter = new DepthFirstIterator<ObjectNode,DefaultEdge>(transposedGraph,rsst.sink);
-			ObjectNode lastNode = rsst.sink;
-			ObjectNode currentNode = null;
-			while (sinkIter.hasNext()){
-				currentNode = sinkIter.next();
-				if (lastNode == currentNode){
-					continue;
-				}
-				// There should only ever be one choice to go, leading straight to the wanted node.
-				if (!transposedGraph.containsEdge(lastNode, currentNode)){
-					throw new GraphStructureException();
-				}
-				lastNode = currentNode;
-			}
-			// and the last node found is the one we want
+			// In all these cases, the sink has been found			
+			List<ObjectNode> nodesFromSink = getDFSOnReversedGraph(rsst.sink);
+			int sizeOfDFS = nodesFromSink.size();
+			// The last node found, starting from sink
+			ObjectNode currentNode = nodesFromSink.get(sizeOfDFS - 1);
 			
 			switch(type) {
+			// If we're missing a back edge, going backwards from the sink gets us to the root
 			case RPG_TYPE_MISSING_BACK_EDGE : rsst.root = currentNode;
 			     break;
+			// Otherwise, we get to the target of a missing list edge
 			default : rsst.target = currentNode;
+			}
+			
+			// If the "right half" of the RPG is large enough, the node n+1 can be found which has an edge to root
+			if ((type == RPG_TYPE_MISSING_LIST_EDGE)){
+				if (sizeOfDFS > n+1){
+					ObjectNode nodeNPlus1 = nodesFromSink.get(n+1);
+					ObjectNode nodeN = nodesFromSink.get(n);
+					rsst.root = findRootMissingListEdge(nodeNPlus1, nodeN);
+				} else {
+					throw new GraphStructureException("This graph can not be fixed at the moment as it's missing a list edge to close to the sink.");
+				}
 			}
 		}		
 		return rsst;
 	}
 	
-	// Doesn't actually do anything yet.
-	public List<ObjectNode> reconstructHamiltonPath() throws Exception{
-		RSST rsst = getRSST();
-		return null;
+	private ObjectNode findRootMissingListEdge(ObjectNode nodeNPlus1, ObjectNode nodeN) throws GraphStructureException{
+		// there must be an edge connecting n+1 and n
+		DefaultEdge listEdge = getEdge(nodeNPlus1, nodeN);
+		if (listEdge == null){
+			throw new GraphStructureException();
+		}
+		ObjectNode result = null;
+		Set<DefaultEdge> edgesFromNPlus1 = outgoingEdgesOf(nodeNPlus1);
+		boolean rootSet = false;
+		for (DefaultEdge e : edgesFromNPlus1){
+			if (!e.equals(listEdge)){
+				if (rootSet){
+					throw new GraphStructureException();
+				}
+				rootSet = true;
+				// n+1 is guaranteed to have an edge to the root. It has one other edge, the one to n.
+				result =  this.getEdgeTarget(e);
+			}
+		}
+		if (!rootSet){
+			throw new GraphStructureException();
+		}
+		return result;
+	}
+	
+	private boolean isBackEdgeMissing(ObjectNode outDegree1Node, ObjectNode sink) throws GraphStructureException{
+		if ((outDegreeOf(outDegree1Node) != 1) || (outDegreeOf(sink) != 0)){
+			throw new GraphStructureException();
+		}
+		Iterator<ObjectNode> iter = new DepthFirstIterator<ObjectNode,DefaultEdge>(this,outDegree1Node);
+		ObjectNode currentNode = null;		
+		while (iter.hasNext()){
+			currentNode = iter.next();
+			// If the sink is reachable by any of the 1-outdegree nodes, there can be no missing list edge, so it must be a missing back edge
+			if (currentNode == sink){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private List<ObjectNode> getDFSOnReversedGraph(ObjectNode sink) throws GraphStructureException{
+		if (outDegreeOf(sink) != 0){
+			throw new GraphStructureException();
+		}
+		List<ObjectNode> reverseNodeList = new ArrayList<ObjectNode>();
+		DirectedGraph<ObjectNode,DefaultEdge> transposedGraph = new EdgeReversedGraph<ObjectNode,DefaultEdge>(this);
+		Iterator<ObjectNode> sinkIter = new DepthFirstIterator<ObjectNode,DefaultEdge>(transposedGraph,sink);
+		ObjectNode lastNode = sink;
+		ObjectNode currentNode = null;
+		reverseNodeList.add(sink);
+		while (sinkIter.hasNext()){
+			currentNode = sinkIter.next();
+			if (lastNode == currentNode){
+				continue;
+			}
+			reverseNodeList.add(currentNode);
+			// There should only ever be one choice to go, leading straight to the wanted node.
+			if (!transposedGraph.containsEdge(lastNode, currentNode)){
+				throw new GraphStructureException();
+			}
+			lastNode = currentNode;
+		}
+		return reverseNodeList;
 	}
 	
 	/**
-	 * type must already be set
-	 * @param rsst
-	 * @return
+	 * Fixes a missing list edge, if possible, and returns the Hamilton path.
+	 * @return The Hamilton path.
+	 * @throws GraphStructureException If the fixing of the graph isn't possible, either due to it not being an RPG or one that is too complicated to fix.
 	 */
-	public boolean checkIfRPGUnbroken(RSST rsst){
-		// This is probably nonsense, but necessary for now until I implement the fixing of edges
-		switch(type) {
-		case RPG_TYPE_UNBROKEN : 
-			return checkIfRPGUnbrokenOrMissingBackEdge(rsst);
-		case RPG_TYPE_MISSING_BACK_EDGE : 
-			return checkIfRPGUnbrokenOrMissingBackEdge(rsst);
-		case RPG_TYPE_MISSING_ROOT : 
-			return checkIfRPGMissingRoot(rsst);
-		case RPG_TYPE_MISSING_SINK : 
-			return checkIfRPGMissingSink(rsst);
-		case RPG_TYPE_MISSING_LIST_EDGE : 
-			return checkIfRPGMissingListEdge(rsst);
-		default : return false;
+	private List<ObjectNode> reconstructHamiltonPath(RSST rsst) throws GraphStructureException{
+		// In both of these cases, source and target are not set
+		// In the former because it's not necessary, in the latter because it's complicated
+		if ((type != RPG_TYPE_UNBROKEN) && (type != RPG_TYPE_MISSING_BACK_EDGE)){
+			this.addEdge(rsst.source, rsst.target);
 		}
+		// In any case, all list edges should now be fixed
+		List<ObjectNode> result = new ArrayList<ObjectNode>();
+		Iterator<ObjectNode> rootIter = new DepthFirstIterator<ObjectNode,DefaultEdge>(this,rsst.root);
+		while (rootIter.hasNext()){
+			result.add(rootIter.next());
+		}
+		return result;
 	}
 	
-	private boolean checkIfRPGMissingRoot(RSST rsst){
-		return false;
-	}
-	
-	private boolean checkIfRPGMissingSink(RSST rsst){
-		return false;
-	}
-	
-	private boolean checkIfRPGMissingListEdge(RSST rsst){
-		return false;
-	}
-	
-	// Let's just get this out of the way to at least get it working again.
-	private boolean checkIfRPGUnbrokenOrMissingBackEdge(RSST rsst){
-		ObjectNode root = rsst.root;
+	/**
+	 * Checks if this graph is an RPG with up to one back edge missing.
+	 * @param root The root node of this graph.
+	 * @return <tt>true</tt> if this graph is an RPG with up to one back edge missing, <tt>false</tt> otherwise.
+	 * @throws Exception If the provided node is not a valid root node of this graph.
+	 */
+	private boolean checkIfRPG(ObjectNode root) throws Exception{
+		if ((root == null) || (!root.isValidRootNode())){
+			throw new Exception("Provided node is not a valid root node.");
+		}
 		HashMap<ObjectReference,ObjectNode> refToNode = new HashMap<ObjectReference,ObjectNode>();
 		Set<ObjectReference> previousObjects = new HashSet<ObjectReference>();
 		for (ObjectNode node : vertexSet()){
@@ -279,11 +316,11 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 		index = (index+1) % 2;
 		// The other one is the sink.
 		result.sink = degree0Nodes.get(index);
-		return null;
+		return result;
 	}
 	/**
 	 * If this graph is presumably missing the sink, this method gets the root and sink of this graph as well as the source of the missing edge. It also creates a dummy node
-	 * with outdegree 0, sets it as target and adds the edge between source and target.
+	 * with outdegree 0 and sets it as target and root.
 	 * @param degree0Nodes list of nodes with outdegree 0.
 	 * @param degree1Nodes list of nodes with outdegree 1.
 	 * @return A RSST 4-tupel with root, sink, source and target set.
@@ -299,7 +336,7 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 		int index = -1;
 		for (int i = 0; i < 2; i++){
 			ObjectNode node = degree1Nodes.get(i);
-			// Again, the root has indegree >= 2, but the second to  last node does not.
+			// The root has indegree >= 2, but the second to last node does not.
 			if (inDegreeOf(node) >= 2){
 				if (result.root == null){
 					result.root = node;
@@ -317,8 +354,7 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 		result.source = degree1Nodes.get(index);
 		// The last one exists somewhere, but is impossible to find, so let's just make a dummy node...
 		result.target = ObjectNode.createDummyNode();
-		// ... and connect the second to last one to our dummy node. This graph is now fixed.
-		addEdge(result.source, result.target);
+		result.sink = result.target;
 		return result;
 	}
 }
