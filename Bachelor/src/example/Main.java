@@ -7,7 +7,6 @@ import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 
 import util.GraphStructureException;
-
 import encoding.Decoder;
 import extraction.Extractor;
 import extraction.ObjectNode;
@@ -22,7 +21,7 @@ public class Main {
 			return;
 		}
 		if (args[0].equals("encode")){
-			int w = 23;
+			int w = 5;
 			String packageName = "example";
 			int[] sip = encoding.Encode.encodeWToSIP(w);
 			DirectedGraph<Integer, DefaultEdge> graph = encoding.Encode.encodeSIPtoRPG(sip);
@@ -30,8 +29,18 @@ public class Main {
 			embedding.Embedder embedder = new embedding.Embedder(".", "example.Example", new String[] {"test"}, "example.Marker.mark");
 			int noOfTracePoints = embedder.run();		
 
-			embedding.WatermarkCreator wmark = new embedding.WatermarkCreator(packageName, graph, noOfTracePoints);
+			// Specifically only make three build-methods to make it easier to check if it's working
+			// TODO: This is only for testing purposes.
+			embedding.WatermarkCreator wmark = new embedding.WatermarkCreator(packageName, graph, 3);
 			int noOfBuildMethods = wmark.create();
+			// Delete the first list edge, thus making it miss the root
+			wmark.deleteListEdge(graph.vertexSet().size() - 2);
+			try {
+				wmark.dump();
+			} catch (IllegalStateException e) {
+				// Can never happen because it creates first.
+				e.printStackTrace();
+			}
 			String wmarkClassName = wmark.getClassName();		
 
 			embedder.dump(wmarkClassName, noOfBuildMethods);

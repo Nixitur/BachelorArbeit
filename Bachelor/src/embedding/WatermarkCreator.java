@@ -10,6 +10,7 @@ import encoding.Encode;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -33,6 +34,12 @@ public class WatermarkCreator implements Constants {
 	private final int				_noOfVertices;
 	private final List<List<Integer>> _splitNodes;
 	private final HashMap<Integer,Integer> remainingNeighbors;
+	private final List<MethodGen> 	_buildMethods;
+	
+	private boolean edgeDeletionAllowed = false;
+	
+	private final List<List<InstructionHandle>> _listEdgeInstructions;
+	private final List<List<InstructionHandle>> _treeEdgeInstructions;
 	
 	/**
 	 * Creates a new WaterMarkCreator.
@@ -53,26 +60,94 @@ public class WatermarkCreator implements Constants {
 		_nodeType = new ObjectType(_fullClassName);
 		_noOfVertices = n;
 		remainingNeighbors = noOfNeighbors();
+		_listEdgeInstructions = new ArrayList<List<InstructionHandle>>(n-1);
+		_treeEdgeInstructions = new ArrayList<List<InstructionHandle>>(n-2);
+		// Fill the lists with null, so that they can later be set due to the erratic order in which edges are added
+		Tools.fillWithNull(_listEdgeInstructions, n-1);
+		Tools.fillWithNull(_treeEdgeInstructions, n-2);
+		_buildMethods = new ArrayList<MethodGen>();
 	}
 	
 	/**
-	 * Creates and outputs the class to the intended destination.
+	 * Creates the class and the methods contained therein, but does not actually yet add them to the class.
 	 * @return The number of build methods in this class, indexed from 0 to (returnValue - 1).
-	 * @throws IOException If it's impossible to output on the chosen OutputStream.
 	 */
-	public int create() throws IOException{
+	public int create(){
 		createFields();
 		createConstructor();
 		for (int i = 0; i < _splitNodes.size(); i++){
-			createBuildGi(i);
+			MethodGen method = createBuildGi(i);
+			_buildMethods.add(method);
 		}
 		createMain();
+		edgeDeletionAllowed = true;
+		return _splitNodes.size();
+	}
+	
+	/**
+	 * Does the final stack-setting and all that jazz for the build methods. After this, no edges may be deleted.
+	 */
+	private void closeOffBuildMethods(){
+		for (int i = 0; i < _buildMethods.size(); i++){
+			MethodGen method = _buildMethods.get(i);
+			method.removeNOPs();
+			method.setMaxStack();
+			method.setMaxLocals();
+			_cg.addMethod(method.getMethod());
+			method.getInstructionList().dispose();
+		}
+		edgeDeletionAllowed = false;
+	}
+	
+	/**
+	 * Deletes the list edge from the vertex i to the vertex i-1. The indices go from 1 to n-1 where n is the number of vertices in the graph.
+	 * @param i The index of the vertex.
+	 * @throws IllegalStateException If the class has not yet been created.
+	 */
+	public void deleteListEdge(int i) throws IllegalStateException{
+		if (!edgeDeletionAllowed){
+			throw new IllegalStateException("Either the class has not been created or it was already dumped. Either way, no edges can be deleted.");
+		}
+		i = i-1;
+		List<InstructionHandle> listEdge = _listEdgeInstructions.get(i);
+		for (InstructionHandle handle : listEdge){
+			// Just set those three instructions to NOP. Those will be removed when the methods are closed afterwards.
+			handle.setInstruction(InstructionFactory.NOP);
+		}
+	}
+	
+	/**
+	 * Deletes the tree edge originating from the vertex i. The indices go from 1 to n-2 where n is the number of vertices in the graph because
+	 * the root vertex does not have a tree edge.
+	 * @param i The index of the vertex.
+	 * @throws IllegalStateException If the class has not yet been created or the class has already been dumped.
+	 */
+	public void deleteTreeEdge(int i) throws IllegalStateException{
+		if (!edgeDeletionAllowed){
+			throw new IllegalStateException("Either the class has not been created or it was already dumped. Either way, no edges can be deleted.");
+		}
+		i = i-1;
+		List<InstructionHandle> treeEdge = _treeEdgeInstructions.get(i);
+		for (InstructionHandle handle : treeEdge){
+			handle.setInstruction(InstructionFactory.NOP);
+		}
+	}
+	
+	/**
+	 * Adds the methods to the class and outputs the class to the correct location. <tt>create()</tt> and whatever edge deletions are wanted must be called first.
+	 * @throws IOException If the class can not be saved.
+	 * @throws IllegalStateException If the class has not yet been created, in which case it may not be dumped.
+	 */
+	public void dump() throws IOException, IllegalStateException{
+		if (!edgeDeletionAllowed){
+			throw new IllegalStateException("The class has not yet been created, so it may not be dumped yet.");
+		}
+		closeOffBuildMethods();
 		String separator = File.separator;
 		int index = _fullClassName.lastIndexOf('.');
 		String packageName = _fullClassName.substring(0, index);
 		FileOutputStream out = new FileOutputStream(packageName+separator+CLASS_NAME+".class");
 		_cg.getJavaClass().dump(out);
-		return _splitNodes.size();
 	}
 	
 	/**
@@ -138,16 +213,23 @@ public class WatermarkCreator implements Constants {
 	 *   for <code>targetVertex</code>
 	 * @param vertexToVarIndex Assigns to each vertex a local variable index.
 	 * @param il The instruction list that is appended to by this method.
+	 * @return The InstructionHandles for this add-edge section. 
 	 */
-	private void createEdge(Integer sourceVertex, Integer targetVertex, String fieldName, VertexToVarIndexMap vertexToVarIndex, 
+	private List<InstructionHandle> createEdge(Integer sourceVertex, Integer targetVertex, String fieldName, VertexToVarIndexMap vertexToVarIndex, 
 			InstructionList il){
+		List<InstructionHandle> edgeInstructions = new ArrayList<InstructionHandle>();
 		int sourceIndex = vertexToVarIndex.get(sourceVertex).intValue();
 		int targetIndex = vertexToVarIndex.get(targetVertex).intValue();
-		il.append(InstructionFactory.createLoad(Type.OBJECT, sourceIndex));
-		il.append(InstructionFactory.createLoad(Type.OBJECT, targetIndex));
-		il.append(_factory.createFieldAccess(_fullClassName, fieldName, _nodeType, PUTFIELD));
+		InstructionHandle ins;
+		ins = il.append(InstructionFactory.createLoad(Type.OBJECT, sourceIndex));
+		edgeInstructions.add(ins);
+		ins = il.append(InstructionFactory.createLoad(Type.OBJECT, targetIndex));
+		edgeInstructions.add(ins);
+		ins = il.append(_factory.createFieldAccess(_fullClassName, fieldName, _nodeType, PUTFIELD));
+		edgeInstructions.add(ins);
 		// reduce the count of how many neighbors are remaining for both nodes
 		reduceRemainingNeighbors(sourceVertex,targetVertex);
+		return edgeInstructions;
 	}
 	
 	/**
@@ -297,7 +379,7 @@ public class WatermarkCreator implements Constants {
 	 * Creates code that builds the <code>i</code>-th subgraph. 
 	 * @param i The index of the subgraph that is to be created. It goes from 0 to <code>noOfSubgraphs-1</code>.
 	 */
-	private void createBuildGi(int i){
+	private MethodGen createBuildGi(int i){
 		List<Integer> nodes = _splitNodes.get(i);
 		boolean thisIsG0 = (i == 0);
 		Integer lastNodeInGi = nodes.get(nodes.size()-1);
@@ -337,7 +419,8 @@ public class WatermarkCreator implements Constants {
 			sourceVertex = lastNodeInGi;
 			targetVertex = firstNodeInPrevious;
 			
-			createEdge(sourceVertex, targetVertex, E1_NAME, vertexToVarIndex, il);
+			List<InstructionHandle> listEdge = createEdge(sourceVertex, targetVertex, E1_NAME, vertexToVarIndex, il);
+			_listEdgeInstructions.set(sourceVertex, listEdge);
 		}
 
 		// Create all the list edges
@@ -345,7 +428,8 @@ public class WatermarkCreator implements Constants {
 			sourceVertex = nodes.get(j);
 			targetVertex = nodes.get(j+1);
 			
-			createEdge(sourceVertex, targetVertex, E1_NAME, vertexToVarIndex, il);
+			List<InstructionHandle> listEdge = createEdge(sourceVertex, targetVertex, E1_NAME, vertexToVarIndex, il);
+			_listEdgeInstructions.set(sourceVertex, listEdge);
 		}
 		
 		// Create all the tree edges
@@ -355,7 +439,8 @@ public class WatermarkCreator implements Constants {
 			// go through all its inNeighbors via tree edges
 			for (Integer vertex : treeNeighbors.get(targetVertex)){
 				sourceVertex = vertex;
-				createEdge(sourceVertex, targetVertex, E2_NAME, vertexToVarIndex, il);
+				List<InstructionHandle> treeEdge = createEdge(sourceVertex, targetVertex, E2_NAME, vertexToVarIndex, il);
+				_treeEdgeInstructions.set(sourceVertex, treeEdge);
 			}
 		}
 		
@@ -384,11 +469,9 @@ public class WatermarkCreator implements Constants {
 		il.append(_factory.createPrintln("buildG"+i+" called"));
 		
 		il.append(InstructionFactory.createReturn(Type.VOID));
-		method.removeNOPs();
-		method.setMaxStack();
-		method.setMaxLocals();
-		_cg.addMethod(method.getMethod());
-		il.dispose();		
+		
+		
+		return method;
 	}
 	
 	public static void main(String[] args) throws IOException{

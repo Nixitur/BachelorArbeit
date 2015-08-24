@@ -28,6 +28,22 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 	public static final int RPG_TYPE_MISSING_SINK = 2;
 	public static final int RPG_TYPE_MISSING_LIST_EDGE = 1;
 	public static final int RPG_TYPE_MISSING_BACK_EDGE = 3;
+	/**
+	 * Possible return value for isValidBodyNode(), indicating that it's a body node that has not been tampered with.
+	 */
+	private static final int BODY_NODE_UNBROKEN = 1;
+	/**
+	 * Possible return value for isValidBodyNode(), indicating that it's a body node that had its list edge removed.
+	 */
+	private static final int BODY_NODE_MISSING_LIST_EDGE = 2;
+	/**
+	 * Possible return value for isValidBodyNode(), indicating that it's a body node that had its back edge removed.
+	 */
+	private static final int BODY_NODE_MISSING_BACK_EDGE = 3;
+	/**
+	 * Possible return value for isValidBodyNode(), indicating that it's not a valid body node.
+	 */
+	private static final int BODY_NODE_WRONG = 4;
 	// Start off as an invalid type
 	public int type = -20;
 	public PartialRPG() {
@@ -135,15 +151,20 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 			
 			// If the "right half" of the RPG is large enough, the node n+1 can be found which has an edge to root
 			if ((type == RPG_TYPE_MISSING_LIST_EDGE)){
-				if (sizeOfDFS > n+1){
-					ObjectNode nodeNPlus1 = nodesFromSink.get(n+1);
-					ObjectNode nodeN = nodesFromSink.get(n);
+				// This is the "n" as it's used in the paper of Bento et al., i. e., the vertices go from 0 to 2n+2.
+				int nBento = (n-3)/2;
+				if (sizeOfDFS > nBento+1){
+					ObjectNode nodeNPlus1 = nodesFromSink.get(nBento+1);
+					ObjectNode nodeN = nodesFromSink.get(nBento);
 					rsst.root = findRootMissingListEdge(nodeNPlus1, nodeN);
+					// degree1Nodes is exactly the root and the source
+					degree1Nodes.remove(rsst.root);
+					rsst.source = degree1Nodes.get(0);
 				} else {
 					throw new GraphStructureException("This graph can not be fixed at the moment as it's missing a list edge to close to the sink.");
 				}
 			}
-		}		
+		}
 		return rsst;
 	}
 	
@@ -240,14 +261,10 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 	 * @throws Exception If the provided node is not a valid root node of this graph.
 	 */
 	private boolean checkIfRPG(ObjectNode root) throws Exception{
-		if ((root == null) || (!root.isValidRootNode())){
+		if ((root == null) || (!isValidRootNode(root))){
 			throw new Exception("Provided node is not a valid root node.");
 		}
-		HashMap<ObjectReference,ObjectNode> refToNode = new HashMap<ObjectReference,ObjectNode>();
-		Set<ObjectReference> previousObjects = new HashSet<ObjectReference>();
-		for (ObjectNode node : vertexSet()){
-			refToNode.put(node.or, node);
-		}
+		Set<ObjectNode> previousObjects = new HashSet<ObjectNode>();
 		Iterator<ObjectNode> rootIter = new DepthFirstIterator<ObjectNode,DefaultEdge>(this,root);
 		ObjectNode lastNode = root;
 		ObjectNode currentNode = root;
@@ -260,9 +277,9 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 			if (!containsEdge(lastNode,currentNode)){
 				return false;
 			}
-			previousObjects.add(lastNode.or);
-			int nodeType = currentNode.isValidBodyNode(previousObjects);
-			if ((nodeType == ObjectNode.BODY_NODE_UNBROKEN) || (nodeType == ObjectNode.BODY_NODE_MISSING_BACK_EDGE)){
+			previousObjects.add(lastNode);
+			int nodeType = isValidBodyNode(currentNode,previousObjects);
+			if ((nodeType == BODY_NODE_UNBROKEN) || (nodeType == BODY_NODE_MISSING_BACK_EDGE)){
 				lastNode = currentNode;
 			} else {
 				// If this non-body node is not the last node
@@ -273,7 +290,7 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 		}		
 		int size = this.vertexSet().size();
 		// We've gotten to the end, so the current node must be a foot node
-		if ((currentNode.isValidFootNode()) && (size >= 5) && (size % 2 == 1)){
+		if ((isValidFootNode(currentNode)) && (size >= 5) && (size % 2 == 1)){
 			return true;
 		} else {
 			return false;
@@ -353,8 +370,71 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 		// The other node is the second to last one in the RPG.
 		result.source = degree1Nodes.get(index);
 		// The last one exists somewhere, but is impossible to find, so let's just make a dummy node...
-		result.target = ObjectNode.createDummyNode();
-		result.sink = result.target;
+		ObjectNode dummyNode = ObjectNode.createDummyNode();
+		this.addVertex(dummyNode);
+		result.target = dummyNode;
+		result.sink = dummyNode;
 		return result;
+	}
+	
+	/**
+	 * Checks if the provided ObjectNode is a valid or potentially broken (by removal of one edge) body node.
+	 * @param node The node to be checked.
+	 * @param previous The nodes that have already been found and are thus valid targets for a back edge in an RPG.
+	 * @return BODY_NODE_WRONG if this ObjectNode is not a valid body node and can not be fixed to be one.<br>
+	 * 		   BODY_NODE_UNBROKEN if this ObjectNode is a valid body node that has not been tampered with, i.e. one edge points
+	 * 		   back, one points forward.<br>
+	 * 		   BODY_NODE_NO_LIST_POINTER if this ObjectNode could potentially be a body node that had its list edge removed.<br>
+	 * 		   BODY_NODE_NO_BACK_POINTER if this ObjectNode could potentially be a body node that had its back edge removed.
+	 */
+	private int isValidBodyNode(ObjectNode node, Set<ObjectNode> previous){
+		Set<DefaultEdge> edges = outgoingEdgesOf(node);
+		List<ObjectNode> children = new ArrayList<ObjectNode>();
+		for (DefaultEdge edge : edges){
+			children.add(getEdgeTarget(edge));
+		}
+		// A body node needs at least one pointer to be fixable
+		if ((children.size() == 0) || (children.size() > 2)){
+			return BODY_NODE_WRONG;
+		}
+		ObjectNode child0 = children.get(0);
+		if (children.size() == 2){
+			ObjectNode child1 = children.get(1);
+			// One pointer needs to point back in previous, the other one needs to point forward to the unknown
+			if (((previous.contains(child0)) && (!previous.contains(child1))) ||
+				((previous.contains(child1)) && (!previous.contains(child0)))) {
+				return BODY_NODE_UNBROKEN;
+			}
+			// If there's two children, but none or both of them point backwards, it is not a body node.
+			return BODY_NODE_WRONG;
+		}
+		// We know there's only one child.
+		if (previous.contains(child0)){
+			// If the only child has already been found, there is no list edge
+			return BODY_NODE_MISSING_LIST_EDGE;
+		} else {
+			// If the only child has not been found, there is no back edge
+			return BODY_NODE_MISSING_BACK_EDGE;
+		}
+	}
+	
+	/**
+	 * Checks if the ObjectNode is a valid root node, i.e. has exactly one outneighbor.
+	 * @param node The node to be checked.
+	 * @return <tt>true</tt> if it's a valid root node, false otherwise.
+	 */
+	private boolean isValidRootNode(ObjectNode node){
+		Set<DefaultEdge> edges = outgoingEdgesOf(node);
+		return (edges.size() == 1);
+	}
+	
+	/**
+	 * Checks if the provided ObjectNode is a valid foot node, i.e. has exactly zero outneighbors.
+	 * @param node The node to be checked.
+	 * @return <tt>true</tt> if it's a valid foot node, false otherwise.
+	 */
+	private boolean isValidFootNode(ObjectNode node){
+		Set<DefaultEdge> edges = outgoingEdgesOf(node);
+		return (edges.size() == 0);
 	}
 }

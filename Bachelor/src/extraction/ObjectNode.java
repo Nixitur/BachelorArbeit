@@ -20,22 +20,6 @@ import com.sun.jdi.Value;
  */
 public class ObjectNode {	
 	public static final int ROOT_NODE = 0;
-	/**
-	 * Possible return value for isValidBodyNode(), indicating that it's a body node that has not been tampered with.
-	 */
-	public static final int BODY_NODE_UNBROKEN = 1;
-	/**
-	 * Possible return value for isValidBodyNode(), indicating that it's a body node that had its list edge removed.
-	 */
-	public static final int BODY_NODE_MISSING_LIST_EDGE = 2;
-	/**
-	 * Possible return value for isValidBodyNode(), indicating that it's a body node that had its back edge removed.
-	 */
-	public static final int BODY_NODE_MISSING_BACK_EDGE = 3;
-	/**
-	 * Possible return value for isValidBodyNode(), indicating that it's not a valid body node.
-	 */
-	public static final int BODY_NODE_WRONG = 4;
 	public static final int FOOT_NODE = 5;
 	/**
 	 * The ObjectReference that is represented by this ObjectNode.
@@ -45,6 +29,7 @@ public class ObjectNode {
 	private static int dummyCount = 0;
 	private int dummyNumber;
 	private Set<Field> sameTypeFields;
+	private boolean isDummyNode = false;
 	
 	/**
 	 * Constructs a new ObjectNode. 
@@ -56,105 +41,7 @@ public class ObjectNode {
 		dummyNumber = -1;
 		sameTypeFields = new HashSet<Field>();
 	}
-	
-	/**
-	 * Checks if this ObjectNode is a valid root node, i.e. has exactly one outneighbor.
-	 * @return <tt>true</tt> if it's a valid root node, false otherwise.
-	 */
-	public boolean isValidRootNode(){
-		return (children.size() == 1);
-	}
-	
-	/**
-	 * Checks if this ObjectNode is a valid or potentially broken (by removal of one edge) body node.
-	 * @param previous The ObjectReferences to the nodes that have already been found and are thus valid targets for a back edge
-	 * 				   in an RPG.
-	 * @return BODY_NODE_WRONG if this ObjectNode is not a valid body node and can not be fixed to be one.<br>
-	 * 		   BODY_NODE_UNBROKEN if this ObjectNode is a valid body node that has not been tampered with, i.e. one edge points
-	 * 		   back, one points forward.<br>
-	 * 		   BODY_NODE_NO_LIST_POINTER if this ObjectNode could potentially be a body node that had its list edge removed.<br>
-	 * 		   BODY_NODE_NO_BACK_POINTER if this ObjectNode could potentially be a body node that had its back edge removed.
-	 */
-	public int isValidBodyNode(Set<ObjectReference> previous){
-		// A body node needs at least one pointer to be fixable
-		if ((children.size() == 0) || (children.size() > 2)){
-			return BODY_NODE_WRONG;
-		}
-		ObjectReference child0 = children.get(0);
-		if (children.size() == 2){
-			ObjectReference child1 = children.get(1);
-			// One pointer needs to point back in previous, the other one needs to point forward to the unknown
-			if (((previous.contains(child0)) && (!previous.contains(child1))) ||
-				((previous.contains(child1)) && (!previous.contains(child0)))) {
-				return BODY_NODE_UNBROKEN;
-			}
-			// If there's two children, but none or both of them point backwards, it is not a body node.
-			return BODY_NODE_WRONG;
-		}
-		// We know there's only one child.
-		if (previous.contains(child0)){
-			// If the only child has already been found, there is no list edge
-			return BODY_NODE_MISSING_LIST_EDGE;
-		} else {
-			// If the only child has not been found, there is no back edge
-			return BODY_NODE_MISSING_BACK_EDGE;
-		}
-	}
-	
-	/**
-	 * Checks if this ObjectNode is a valid foot node, i.e. has exactly zero outneighbors.
-	 * @return <tt>true</tt> if it's a valid foot node, false otherwise.
-	 */
-	public boolean isValidFootNode(){
-		return (children.size() == 0);
-	}
-	
-	/**
-	 * Gets the unique outneighbor via list edge from this node, if possible. 
-	 * @param previous The ObjectReferences to the nodes that have already been found and are thus valid targets for a back edge
-	 * 				   in an RPG.
-	 * @return The unique outneighbor via list edge from this node if such exists, <tt>null</i> otherwise.
-	 */
-	public ObjectReference getListNeighbor(Set<ObjectReference> previous){
-		int bodyNodeType = isValidBodyNode(previous);
-		// If it's not a root node nor unbroken nor missing a back edge, a list edge can not be found
-		if (!isValidRootNode() && (bodyNodeType != BODY_NODE_UNBROKEN) && (bodyNodeType != BODY_NODE_MISSING_BACK_EDGE)){
-			return null;
-		}
-		ObjectReference child0 = children.get(0);
-		ObjectReference child1 = (children.size() == 2) ? children.get(1) : null;
 
-		if (previous.contains(child0)){
-			ObjectReference result = (child1 == null) ? child1 : null;
-			return result;
-		} else if ((child1 != null) && (previous.contains(child1))){
-			return child0;
-		}
-		return null;
-	}
-	
-	/**
-	 * Gets the unique outneighbor via back edge from this node, if possible. 
-	 * @param previous The ObjectReferences to the nodes that have already been found and are thus valid targets for a back edge
-	 * 				   in an RPG.
-	 * @return The unique outneighbor via back edge from this node if such exists, <tt>null</i> otherwise.
-	 */
-	public ObjectReference getBackNeighbor(Set<ObjectReference> previous){
-		int bodyNodeType = isValidBodyNode(previous);
-		if ((bodyNodeType != BODY_NODE_UNBROKEN) && (bodyNodeType != BODY_NODE_MISSING_LIST_EDGE)){
-			return null;
-		}
-		ObjectReference child0 = children.get(0);
-		ObjectReference child1 = (children.size() == 2) ? children.get(1) : null;
-		
-		if (previous.contains(child0)){
-			return child0;
-		} else if ((child1 != null) && (previous.contains(child1))){
-			return child1;
-		}
-		return null;
-	}
-	
 	/**
 	 * Returns the children of this ObjectNode which are ObjectReferences of the same type as <tt>this.or</tt> that are referenced
 	 * by a field value of <tt>this.or</tt>. This list is backed by this instance, so changes on it will reflect on the object. 
@@ -230,6 +117,7 @@ public class ObjectNode {
 		ObjectNode dummy = new ObjectNode(null);
 		dummy.dummyNumber = dummyCount;
 		dummyCount++;
+		dummy.isDummyNode = true;
 		return dummy;
 	}
 	
@@ -239,7 +127,8 @@ public class ObjectNode {
 	 *   and the String representation of the list of children and then another new line.
 	 */
 	public String toString(){
-		return or.toString()+"\n"+children.toString()+"\n";
+		String orString = isDummyNode ? "Dummy node "+dummyNumber : or.toString();
+		return orString+"\n"+children.toString()+"\n";
 	}
 
 	/* (non-Javadoc)

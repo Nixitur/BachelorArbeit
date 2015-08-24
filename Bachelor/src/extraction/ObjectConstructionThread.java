@@ -53,6 +53,7 @@ public class ObjectConstructionThread extends QueueThread {
 			ObjectNode node = ObjectNode.checkIfValidRPGNode(thiz);
 			if (node != null){
 				constructedNodes.add(node);
+				thiz.disableCollection();
 			}
 		} catch (IncompatibleThreadStateException e1) {
 			// TODO Auto-generated catch block

@@ -31,6 +31,12 @@ public class Tools {
 	 */
 	private Tools() {}
 	
+	static <T> void fillWithNull(List<T> list, int n){
+		for (int i = 0; i < n; i++){
+			list.add(null);
+		}
+	}
+	
 	/**
 	 * Returns the signature for a method. The format is based on what <code>javap</code> returns for the respective Methodref in the
 	 * constant pool of the class.
