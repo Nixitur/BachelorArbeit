@@ -1,7 +1,6 @@
 package extraction.fixing;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -11,18 +10,16 @@ import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.EdgeReversedGraph;
 
-import com.sun.jdi.ObjectReference;
-
 import extraction.ObjectNode;
 
 import org.jgrapht.graph.SimpleDirectedGraph;
-import org.jgrapht.traverse.BreadthFirstIterator;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 import util.GraphStructureException;
 
 public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 230563163974817736L;
+	
 	public static final int RPG_TYPE_UNBROKEN = 0;
 	public static final int RPG_TYPE_MISSING_ROOT = -1;
 	public static final int RPG_TYPE_MISSING_SINK = 2;
@@ -46,6 +43,9 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 	private static final int BODY_NODE_WRONG = 4;
 	// Start off as an invalid type
 	public int type = -20;
+	
+	private List<ObjectNode> hamiltonPath = null;
+	
 	public PartialRPG() {
 		super(DefaultEdge.class);
 	}
@@ -80,8 +80,8 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 		try {
 			// Sets the type field correctly and finds root and sink of the graph as well as source and target of missing list edge
 			RSST rsst = getRSST();
-			// Fix missing list edge if possible
-			reconstructHamiltonPath(rsst);
+			// Fix missing list edge if possible and store Hamilton Path
+			this.hamiltonPath = reconstructHamiltonPath(rsst);
 			// With the list edges fixed, the final and most precise RPG-check can commence
 			return checkIfRPG(rsst.root);
 		} catch (Exception e) {
@@ -436,5 +436,9 @@ public class PartialRPG extends SimpleDirectedGraph<ObjectNode, DefaultEdge> {
 	private boolean isValidFootNode(ObjectNode node){
 		Set<DefaultEdge> edges = outgoingEdgesOf(node);
 		return (edges.size() == 0);
+	}
+	
+	public List<ObjectNode> getHamiltonPath(){
+		return hamiltonPath;
 	}
 }

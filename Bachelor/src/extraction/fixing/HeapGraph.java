@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.AsUndirectedGraph;
 import org.jgrapht.graph.DirectedSubgraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
@@ -47,28 +48,13 @@ public class HeapGraph extends
 	
 	public Set<PartialRPG> getConnectedComponents(){
 		Set<PartialRPG> result = new HashSet<PartialRPG>();
-		// We need to look at the undirected graph because we want to find the weakly connected components
-		AsUndirectedGraph<ObjectNode, DefaultEdge> undirectedGraph = new AsUndirectedGraph<ObjectNode, DefaultEdge>(this);
-		Set<ObjectNode> foundNodes = new HashSet<ObjectNode>();
-		for (ObjectNode vertex : this.vertexSet()){
-			if (!(foundNodes.contains(vertex))){
-				// vertex is now the start node for the DFS, iterating over vertices in the undirected graph 
-				Iterator<ObjectNode> iter = new DepthFirstIterator<ObjectNode,DefaultEdge>(undirectedGraph,vertex);
-				Set<ObjectNode> subgraphVertices = new HashSet<ObjectNode>();
-				while (iter.hasNext()){
-					subgraphVertices.add(iter.next());
-				}
-				foundNodes.addAll(subgraphVertices);
-				
-				DirectedSubgraph<ObjectNode, DefaultEdge> inducedSubgraph = new DirectedSubgraph<ObjectNode, DefaultEdge>(
-						this,subgraphVertices,null);
-				try {
-					PartialRPG partialRPG = new PartialRPG(inducedSubgraph);
-					result.add(partialRPG);
-				} catch (GraphStructureException e) {
-					// If what we provide is not even a broken RPG, just ignore it. This includes graphs with just one node which MIGHT be a part of an RPG
-					// but just aren't too helpful.
-				}
+		Set<DirectedGraph<ObjectNode,DefaultEdge>> subgraphs = GraphTools.getConnectedComponents(this);
+		for (DirectedGraph<ObjectNode,DefaultEdge> subgraph : subgraphs){
+			try {
+				PartialRPG partialRPG = new PartialRPG(subgraph);
+				result.add(partialRPG);
+			} catch (GraphStructureException e) {
+				// If what we provide is not even a broken RPG, just ignore it.
 			}
 		}
 		return result;

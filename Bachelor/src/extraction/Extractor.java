@@ -4,11 +4,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import util.GraphStructureException;
-
 import extraction.fixing.HeapGraph;
 import extraction.fixing.PartialRPG;
-import extraction.fixing.RSST;
 
 /**
  * This class is for extracting RPG graphs embedded in a program with the method of Chroni and Nikolopoulos.

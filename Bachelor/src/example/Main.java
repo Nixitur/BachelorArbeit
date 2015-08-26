@@ -21,7 +21,7 @@ public class Main {
 			return;
 		}
 		if (args[0].equals("encode")){
-			int w = 5;
+			int w = 23;
 			String packageName = "example";
 			int[] sip = encoding.Encode.encodeWToSIP(w);
 			DirectedGraph<Integer, DefaultEdge> graph = encoding.Encode.encodeSIPtoRPG(sip);
@@ -29,9 +29,7 @@ public class Main {
 			embedding.Embedder embedder = new embedding.Embedder(".", "example.Example", new String[] {"test"}, "example.Marker.mark");
 			int noOfTracePoints = embedder.run();		
 
-			// Specifically only make three build-methods to make it easier to check if it's working
-			// TODO: This is only for testing purposes.
-			embedding.WatermarkCreator wmark = new embedding.WatermarkCreator(packageName, graph, 3);
+			embedding.WatermarkCreator wmark = new embedding.WatermarkCreator(packageName, graph, noOfTracePoints);
 			int noOfBuildMethods = wmark.create();
 			// Delete the first list edge, thus making it miss the root
 			wmark.deleteListEdge(graph.vertexSet().size() - 2);
