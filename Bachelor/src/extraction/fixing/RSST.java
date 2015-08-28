@@ -1,7 +1,5 @@
 package extraction.fixing;
 
-import extraction.ObjectNode;
-
 /**
  * Route, sink, source, target.
  * This is just a wrapper.
@@ -10,14 +8,14 @@ import extraction.ObjectNode;
  */
 public class RSST {
 
-	public ObjectNode root;
-	public ObjectNode sink;
-	public ObjectNode source;
-	public ObjectNode target;
+	public Integer root;
+	public Integer sink;
+	public Integer source;
+	public Integer target;
 	public RSST(){
 		this(null,null,null,null);
 	}
-	public RSST(ObjectNode root, ObjectNode sink, ObjectNode source, ObjectNode target) {
+	public RSST(Integer root, Integer sink, Integer source, Integer target) {
 		this.root = root;
 		this.sink = sink;
 		this.source = source;

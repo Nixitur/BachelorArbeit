@@ -9,7 +9,6 @@ import org.jgrapht.graph.DefaultEdge;
 import util.GraphStructureException;
 import encoding.Decoder;
 import extraction.Extractor;
-import extraction.ObjectNode;
 import extraction.fixing.PartialRPG;
 
 public class Main {
@@ -21,7 +20,7 @@ public class Main {
 			return;
 		}
 		if (args[0].equals("encode")){
-			int w = 23;
+			int w = 5;
 			String packageName = "example";
 			int[] sip = encoding.Encode.encodeWToSIP(w);
 			DirectedGraph<Integer, DefaultEdge> graph = encoding.Encode.encodeSIPtoRPG(sip);
@@ -31,8 +30,8 @@ public class Main {
 
 			embedding.WatermarkCreator wmark = new embedding.WatermarkCreator(packageName, graph, noOfTracePoints);
 			int noOfBuildMethods = wmark.create();
-			// Delete the first list edge, thus making it miss the root
-			wmark.deleteListEdge(graph.vertexSet().size() - 2);
+			// Delete a tree edge
+			wmark.deleteTreeEdge(2);
 			try {
 				wmark.dump();
 			} catch (IllegalStateException e) {
@@ -50,7 +49,7 @@ public class Main {
 
 			for (PartialRPG rpg : rpgList){
 				try {
-					Decoder<ObjectNode> decoder = new Decoder<ObjectNode>(rpg);
+					Decoder<Integer> decoder = new Decoder<Integer>(rpg);
 					int wNew = decoder.decodeRPGBento();
 					System.out.println("The embedded watermark is possibly "+wNew);
 				} catch (GraphStructureException e) {

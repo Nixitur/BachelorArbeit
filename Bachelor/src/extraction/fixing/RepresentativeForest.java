@@ -14,7 +14,6 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
 
 import util.GraphStructureException;
-import extraction.ObjectNode;
 
 public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEdge> {
 	private static final long serialVersionUID = 5337022394010877420L;
@@ -32,31 +31,30 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 	private HashMap<Integer,Set<Integer>> descendants;
 	private HashMap<Integer,Integer> parent;
 
-	public RepresentativeForest(PartialRPG graph) throws GraphStructureException{
+	public <V> RepresentativeForest(DirectedGraph<V,DefaultEdge> graph, List<V> hamiltonianPath) throws GraphStructureException{
 		super(DefaultEdge.class);
-		if (graph.type != PartialRPG.RPG_TYPE_MISSING_BACK_EDGE){
-			throw new GraphStructureException("All edges are already accounted for, no tree edges must be fixed.");
-		}
-		List<ObjectNode> hamiltonPath = graph.getHamiltonPath();
+		List<V> hamiltonPath = hamiltonianPath;
 		if (hamiltonPath == null){
 			throw new GraphStructureException("The Hamilton path of the RPG has not been fixed yet.");
 		}
+		large = new HashSet<Integer>();
+		small = new HashSet<Integer>();
 		// The highest vertex is 2n+2, the lowest one is 0
 		n = (graph.vertexSet().size() - 3) / 2;
 		int edgeNumber = graph.edgeSet().size();
 		if (edgeNumber < 4*n+1){
 			throw new GraphStructureException("There are too many missing edges to fix the graph.");
 		} else if (edgeNumber >= 4*n+3){
-			throw new GraphStructureException("There are no missing edges, so this is rather pointless.");
+			throw new GraphStructureException("There are no missing edges, so this is pointless.");
 		}
 		boolean twoEdgesMissing = (graph.edgeSet().size() == 4*n+1);
 		// This graph can now finally be correctly labeled since the Hamilton path is known. Thus, it's better to just use Integer nodes.
-		HashMap<ObjectNode,Integer> nodeToInteger = new HashMap<ObjectNode,Integer>();
+		HashMap<V,Integer> nodeToInteger = new HashMap<V,Integer>();
 		Set<DefaultEdge> listEdges = new HashSet<DefaultEdge>();
 		// The first node in the Hamilton path is the root that is identified with the vertex 2n+2
 		Integer index = 2 * n + 2;
-		ObjectNode lastNode = null;
-		for (ObjectNode node : hamiltonPath){			
+		V lastNode = null;
+		for (V node : hamiltonPath){			
 			if (lastNode != null){
 				DefaultEdge listEdge = graph.getEdge(lastNode, node);
 				listEdges.add(listEdge);
@@ -83,8 +81,8 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 		edgeSet.removeAll(listEdges);
 		// edgeSet is linear in size
 		for (DefaultEdge edge : edgeSet){
-			ObjectNode source = graph.getEdgeSource(edge);
-			ObjectNode target = graph.getEdgeTarget(edge);
+			V source = graph.getEdgeSource(edge);
+			V target = graph.getEdgeTarget(edge);
 			// Invert the edge direction
 			Integer targetInt = nodeToInteger.get(source);
 			Integer sourceInt = nodeToInteger.get(target);
@@ -97,6 +95,7 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 		}
 		// Since this is missing two edges, there should be three trees
 		Set<DirectedGraph<Integer,DefaultEdge>> trees = GraphTools.getConnectedComponents(this);
+		treeRoots = new HashMap<DirectedGraph<Integer,DefaultEdge>,Integer>();
 		for (DirectedGraph<Integer,DefaultEdge> tree : trees){
 			Integer treeRoot = Collections.max(tree.vertexSet());
 			treeRoots.put(tree,treeRoot);
@@ -109,6 +108,8 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 	 * Sets the children and parent of each and every vertex in ascending order. This is DEFINITELY not O(n) due to the sorting, but what can you do.
 	 */
 	private void setChildrenAndParents(){
+		children = new HashMap<Integer,List<Integer>>();
+		parent = new HashMap<Integer,Integer>();
 		for (Integer v : vertexSet()){
 			List<Integer> vChildren = new ArrayList<Integer>();
 			children.put(v, vChildren);
@@ -128,9 +129,11 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 	 * Calculates the descendants of every vertex and stores them in descendants.
 	 */
 	private void setDescendants(){
-		for (DirectedGraph<Integer,DefaultEdge> tree : treeRoots.keySet()){
-			getDescendants(treeRoots.get(tree));
+		descendants = new HashMap<Integer,Set<Integer>>();
+		for (Integer root : treeRoots.values()){
+			getDescendants(root);
 		}
+		return;
 	}
 	
 	/**
@@ -143,9 +146,11 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 		List<Integer> vChildren = children.get(v);
 		if (vChildren.isEmpty()){
 			Set<Integer> empty = new HashSet<Integer>();
+			descendants.put(v, empty);
 			return empty;
 		}
 		for (Integer child : vChildren){
+			vDescendants.add(child);
 			vDescendants.addAll(getDescendants(child));
 		}
 		descendants.put(v, vDescendants);
@@ -157,13 +162,13 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 	 * @return The fixed element.
 	 * @throws GraphStructureException If no fixed element can be found which implies that it's not actually an RPG.
 	 */
-	private Integer getFixedElement() throws GraphStructureException{
+	public Integer getFixedElement() throws GraphStructureException{
 		if(is2n1FixedElement()){
 			return 2*n+1;
 		}
 		Set<Integer> largeCopy = new HashSet<Integer>(large);
-		largeCopy.remove(2*n+1);
-		// If the forest has a large vertex x...
+		// If the forest has a large vertex x, excluding the children of 2n+2...
+		largeCopy.removeAll(children.get(2*n+2));
 		for (Integer x : largeCopy){
 			// with a sibling z...
 			List<Integer> siblings = children.get(parent.get(x));

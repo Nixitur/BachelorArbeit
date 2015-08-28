@@ -2,16 +2,11 @@ package extraction.fixing;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import org.jgrapht.DirectedGraph;
-import org.jgrapht.graph.AsUndirectedGraph;
-import org.jgrapht.graph.DirectedSubgraph;
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.traverse.DepthFirstIterator;
-
 import util.GraphStructureException;
 
 import com.sun.jdi.ObjectReference;
