@@ -37,23 +37,22 @@ public class Extractor {
 	 * Executes the given main class, extracting all embedded RPGs.
 	 * @return A list of all RPGS that are embedded in the program.
 	 */
-	public Set<PartialRPG> run(){
+	public Set<Set<Integer>> run(){
 		List<ObjectNode> constructedNodes = extractConstructedNodes(RingBuffer.UNLIMITED_SIZE);
 		Set<ObjectNode> nodeSet = new HashSet<ObjectNode>(constructedNodes);
+		Set<Set<Integer>> rootChildrenSets = new HashSet<Set<Integer>>();
 		try {
 			HeapGraph heapGraph = new HeapGraph(nodeSet);
 			Set<PartialRPG> subgraphs = heapGraph.getConnectedComponents();
-			Set<PartialRPG> toBeRemoved = new HashSet<PartialRPG>();
 			for (PartialRPG rpg : subgraphs){
-				if (rpg.checkForIntegrityAndFix()){
-					System.out.println("Type: "+rpg.type);
+				Set<Integer> rootChildren = rpg.checkForIntegrityAndGetRootChildren();
+				if (rootChildren != null){
+					rootChildrenSets.add(rootChildren);
 				} else {
-					toBeRemoved.add(rpg);
 					System.out.println("Not an RPG");
 				}
 			}
-			subgraphs.removeAll(toBeRemoved);
-			return subgraphs;
+			return rootChildrenSets;
 		} catch (Exception e) {
 			// This REALLY shouldn't happen.
 			e.printStackTrace();
@@ -91,8 +90,8 @@ public class Extractor {
 
 	public static void main(String[] args){
 		Extractor ext = new Extractor(".", "example.Example", new String[] {"test"});
-		Set<PartialRPG> rpgList = ext.run();
-		System.out.println(rpgList);
+		Set<Set<Integer>> rootChildrenSets = ext.run();
+		System.out.println(rootChildrenSets);
 		ext.quitVM();
 	}
 }

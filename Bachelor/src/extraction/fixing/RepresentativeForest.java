@@ -12,6 +12,7 @@ import java.util.Set;
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleDirectedGraph;
+import org.jgrapht.graph.DirectedSubgraph;
 
 import util.GraphStructureException;
 
@@ -30,6 +31,8 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 	private HashMap<Integer,List<Integer>> children;
 	private HashMap<Integer,Set<Integer>> descendants;
 	private HashMap<Integer,Integer> parent;
+	// The fixed element
+	private Integer f;
 
 	public <V> RepresentativeForest(DirectedGraph<V,DefaultEdge> graph, List<V> hamiltonianPath) throws GraphStructureException{
 		super(DefaultEdge.class);
@@ -44,10 +47,10 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 		int edgeNumber = graph.edgeSet().size();
 		if (edgeNumber < 4*n+1){
 			throw new GraphStructureException("There are too many missing edges to fix the graph.");
-		} else if (edgeNumber >= 4*n+3){
-			throw new GraphStructureException("There are no missing edges, so this is pointless.");
+		} else if (edgeNumber > 4*n+3){
+			throw new GraphStructureException("There are too many edges. How did that happen?");
 		}
-		boolean twoEdgesMissing = (graph.edgeSet().size() == 4*n+1);
+		boolean oneEdgeMissing = (graph.edgeSet().size() == 4*n+2);
 		// This graph can now finally be correctly labeled since the Hamilton path is known. Thus, it's better to just use Integer nodes.
 		HashMap<V,Integer> nodeToInteger = new HashMap<V,Integer>();
 		Set<DefaultEdge> listEdges = new HashSet<DefaultEdge>();
@@ -73,7 +76,6 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 			index--;
 			lastNode = node;
 		}
-		removeVertex(0);
 		// Clone the graph's edge set, so that it is not overwritten
 		Set<DefaultEdge> edgeSet = new HashSet<DefaultEdge>(graph.edgeSet());
 
@@ -87,13 +89,13 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 			Integer targetInt = nodeToInteger.get(source);
 			Integer sourceInt = nodeToInteger.get(target);
 			// If only one tree edge is missing, remove a random edge to make it two as that's what the algorithms are designed for
-			if(twoEdgesMissing){
-				addEdge(sourceInt,targetInt);
-			} else {
-				twoEdgesMissing = true;
-			}
+			addEdge(sourceInt,targetInt);
 		}
-		// Since this is missing two edges, there should be three trees
+		if (oneEdgeMissing){
+			// If exactly one edge is missing, remove another random tree edge
+			removeEdge(edgeSet.iterator().next());
+		}
+		// Since this is missing either zero or two edges, there should be one or three trees
 		Set<DirectedGraph<Integer,DefaultEdge>> trees = GraphTools.getConnectedComponents(this);
 		treeRoots = new HashMap<DirectedGraph<Integer,DefaultEdge>,Integer>();
 		for (DirectedGraph<Integer,DefaultEdge> tree : trees){
@@ -101,7 +103,61 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 			treeRoots.put(tree,treeRoot);
 		}
 		setChildrenAndParents();
-		setDescendants();
+		// If there are no missing edges, setting descendants is superfluous and takes way too long
+		if(oneEdgeMissing){
+			setDescendants();
+		}
+		f = getFixedElement();
+	}
+	
+	/**
+	 * Returns the root children in the original representative tree without removed edges.
+	 * @return The children of the root node.
+	 */
+	public Set<Integer> getRootChildren(){
+		Set<Integer> rootChildren = new HashSet<Integer>(children.get(2*n+2));
+		if (f == 2*n+1){
+			// if f==2n+1, then the children of the root are simply {n+1,n+2,...,2n+1}, all the large vertices
+			return large;
+		}
+		Set<Integer> xC = new HashSet<Integer>(large);
+		xC.remove(f);
+		xC.add(2*n+2);
+		DirectedGraph<Integer,DefaultEdge> inducedXcGraph = new DirectedSubgraph<Integer,DefaultEdge>(this,xC,null);
+		Set<DirectedGraph<Integer,DefaultEdge>> components = GraphTools.getConnectedComponents(inducedXcGraph);
+		// if F[Xc] connected...
+		// This is especially the case if there are no missing edges; that's why descendants aren't necessary in that case
+		if (components.size() == 1){			
+			return rootChildren;
+		}
+		Set<Integer> isolatedVertices = new HashSet<Integer>();
+		for (DirectedGraph<Integer,DefaultEdge> tree : treeRoots.keySet()){
+			Set<Integer> vertices = tree.vertexSet();
+			if (vertices.size() == 1){
+				isolatedVertices.add(vertices.iterator().next());
+			}
+		}
+		if (isolatedVertices.size() == 0){
+			rootChildren.add(2*n+1);
+			return rootChildren;
+		}
+		if (isolatedVertices.size() == 2){
+			rootChildren.addAll(isolatedVertices);
+			return rootChildren;
+		}
+		// There can be no more than 2 isolated vertices since we only removed two edges. Hence, we don't need to check for size() == 1
+		Integer x = isolatedVertices.iterator().next();
+		if (descendants.get(f).size() != 2*n-f+1){
+			rootChildren.add(x);
+			return rootChildren;
+		}
+		Deque<Integer> preord = preorderTraversal(f);
+		Integer yR = preord.getLast();
+		if (rootChildren.size() < yR){
+			rootChildren.add(x);
+			rootChildren.add(2*n+1);
+		}
+		return rootChildren;
 	}
 	
 	/**
@@ -162,7 +218,7 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 	 * @return The fixed element.
 	 * @throws GraphStructureException If no fixed element can be found which implies that it's not actually an RPG.
 	 */
-	public Integer getFixedElement() throws GraphStructureException{
+	private Integer getFixedElement() throws GraphStructureException{
 		if(is2n1FixedElement()){
 			return 2*n+1;
 		}
@@ -183,7 +239,7 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 			}
 			Set<Integer> ySharp = new HashSet<Integer>();
 			// Y' = {x-n, x-n+1, ..., n}
-			for (int i = x-n; i < n; i++){
+			for (int i = x-n; i <= n; i++){
 				ySharp.add(i);
 			}
 			// if N*_F(x) contained in Y'

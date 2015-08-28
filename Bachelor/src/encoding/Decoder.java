@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -93,6 +94,7 @@ public class Decoder<V>{
 		}
 		return result;
 	}
+	
 	
 	/**
 	 * Decodes a self-inverting permutation to the number that is encoded in that permutation.
@@ -193,6 +195,19 @@ public class Decoder<V>{
 		// Since Bento is 1- instead of 0-indexed, we have to subtract 1
 		for (Integer child : children){
 			sum = (int) (sum + (Math.pow(2, 2*n - child - 1)));
+		}
+		return sum;
+	}
+	
+	public static int decodeRootChildren(Set<Integer> rootChildren){
+		int sum = 0;
+		Integer max = Collections.max(rootChildren);
+		int n = (max-1)/2;
+		for (Integer child : rootChildren){
+			if (child == max){
+				continue;
+			}
+			sum = (int) (sum + (Math.pow(2, 2*n - child)));
 		}
 		return sum;
 	}

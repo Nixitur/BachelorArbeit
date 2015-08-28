@@ -80,25 +80,32 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 	}
 	
 	/**
-	 * Reconstructs a missing list edge if it's the only missing edge and checks whether this graph is an RPG.
-	 * @return true if this is an RPG, false otherwise
+	 * Checks whether this graph is an RPG and returns the children of the root node.
+	 * @return The children of the root node if this is a fixable RPG, <tt>null</tt> otherwise.
 	 */
-	public boolean checkForIntegrityAndFix(){		
+	public Set<Integer> checkForIntegrityAndGetRootChildren(){		
 		try {
 			// Sets the type field correctly and finds root and sink of the graph as well as source and target of missing list edge
 			RSST rsst = getRSST();
 			// Fix missing list edge if possible and store Hamilton Path
 			this.hamiltonPath = reconstructHamiltonPath(rsst);
-			RepresentativeForest forest = new RepresentativeForest(this,hamiltonPath);
-			Integer f = forest.getFixedElement();
 			// With the list edges fixed, the final and most precise RPG-check can commence
-			return checkIfRPG(rsst.root);
+			if (!checkIfRPG(rsst.root)){
+				return null;
+			}
+			RepresentativeForest forest = new RepresentativeForest(this,hamiltonPath);
+			Set<Integer> rootChildren = forest.getRootChildren();
+			return rootChildren;
 		} catch (Exception e) {
-			return false;
+			return null;
 		}
-		// TODO: Add fixing of tree edge which is complicated and requires all the Bento stuff
 	}
 	
+	/**
+	 * Gets the root and sink of this RPG as well as the source and target of a missing edge, if possible. 
+	 * @return An RSST object holding root, sink, source and target, if it's possible to extract those. 
+	 * @throws GraphStructureException If any of those four vertices can not be extracted, either due to this graph not being an RPG or just being too broken.
+	 */
 	private RSST getRSST() throws GraphStructureException{
 		int n = vertexSet().size();
 		int m = edgeSet().size();
@@ -176,7 +183,14 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 		}
 		return rsst;
 	}
-	
+
+	/**
+	 * Finds the root node if this graph is missing a list edge.
+	 * @param nodeNPlus1 The node n+1, using the labels of Bento et al.
+	 * @param nodeN THe node n, using the labels of Bento et al.
+	 * @return The root node of this graph.
+	 * @throws GraphStructureException If no root can be found, either due to this graph just being too broken or just not being an RPG.
+	 */
 	private Integer findRootMissingListEdge(Integer nodeNPlus1, Integer nodeN) throws GraphStructureException{
 		// there must be an edge connecting n+1 and n
 		DefaultEdge listEdge = getEdge(nodeNPlus1, nodeN);
@@ -202,6 +216,13 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 		return result;
 	}
 	
+	/**
+	 * If this graph is either missing a list edge (other than the first or last) or a back edge, this method finds out whether it is missing a back edge.
+	 * @param outDegree1Node One of the two nodes with outdegree 1.
+	 * @param sink The sink of this RPG.
+	 * @return <tt>true</tt> if this is missing a back edge, <tt>false</tt> otherwise.
+	 * @throws GraphStructureException If outDegree1Node does not have outdegree 1 or if sink does not have outdegree 0.
+	 */
 	private boolean isBackEdgeMissing(Integer outDegree1Node, Integer sink) throws GraphStructureException{
 		if ((outDegreeOf(outDegree1Node) != 1) || (outDegreeOf(sink) != 0)){
 			throw new GraphStructureException();
@@ -218,6 +239,12 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 		return false;
 	}
 	
+	/**
+	 * Performs Depth First Search on the transposed graph of this graph, starting from the sink.
+	 * @param sink This graph's sink.
+	 * @return The nodes in the order in which they have been encountered in the DFS.
+	 * @throws GraphStructureException If sink does not have outdegree 0, i.e. is not actually the sink.
+	 */
 	private List<Integer> getDFSOnReversedGraph(Integer sink) throws GraphStructureException{
 		if (outDegreeOf(sink) != 0){
 			throw new GraphStructureException();
@@ -445,9 +472,5 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 	private boolean isValidFootNode(Integer node){
 		Set<DefaultEdge> edges = outgoingEdgesOf(node);
 		return (edges.size() == 0);
-	}
-	
-	public List<Integer> getHamiltonPath(){
-		return hamiltonPath;
 	}
 }

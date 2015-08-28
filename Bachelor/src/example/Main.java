@@ -20,7 +20,7 @@ public class Main {
 			return;
 		}
 		if (args[0].equals("encode")){
-			int w = 5;
+			int w = 43;
 			String packageName = "example";
 			int[] sip = encoding.Encode.encodeWToSIP(w);
 			DirectedGraph<Integer, DefaultEdge> graph = encoding.Encode.encodeSIPtoRPG(sip);
@@ -31,7 +31,7 @@ public class Main {
 			embedding.WatermarkCreator wmark = new embedding.WatermarkCreator(packageName, graph, noOfTracePoints);
 			int noOfBuildMethods = wmark.create();
 			// Delete a tree edge
-			wmark.deleteTreeEdge(2);
+			wmark.deleteTreeEdge(12);
 			try {
 				wmark.dump();
 			} catch (IllegalStateException e) {
@@ -44,17 +44,12 @@ public class Main {
 		}
 		if (args[0].equals("decode")){
 			Extractor ext = new Extractor(".", "example.Example", new String[] {"test"});
-			Set<PartialRPG> rpgList = ext.run();
+			Set<Set<Integer>> rootChildrenSets = ext.run();
 			ext.quitVM();
 
-			for (PartialRPG rpg : rpgList){
-				try {
-					Decoder<Integer> decoder = new Decoder<Integer>(rpg);
-					int wNew = decoder.decodeRPGBento();
-					System.out.println("The embedded watermark is possibly "+wNew);
-				} catch (GraphStructureException e) {
-					// ignore and go on to the next one
-				}
+			for (Set<Integer> rootChildren : rootChildrenSets){
+				int wNew = Decoder.decodeRootChildren(rootChildren);
+				System.out.println("The embedded watermark is possibly "+wNew);
 			}
 		}
 	}
