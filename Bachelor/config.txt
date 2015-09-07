@@ -1,0 +1,18 @@
+classPath = .
+mainClass = example.Example
+# divide arguments with a comma "," JUST a comma, not a space after it
+arguments = test
+
+# the following settings are only relevant for encoding
+encodingNumber = 2378
+watermarkPackage = example
+markMethod = example.Marker.mark
+
+# use exactly "tree" or "list" for deleting a tree edge or a list edge respectively; anything else will lead to no deletion
+edgeType = list
+
+# let n be the bitlength of the encoding number
+# list edges go from 1 to 2n+2
+# tree edges go from 1 to 2n+1
+# if the provided bounds are exceeded, the number will be ignored
+edgeNumber = 15
