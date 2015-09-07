@@ -26,7 +26,7 @@ public class ExtractVMLauncher extends VMLauncher {
 	 * @param args The arguments to the class' main method.
 	 * @param size The size of the ring buffer.
 	 */
-	public ExtractVMLauncher(String classPath, String className, String[] args, int size) {
+	public ExtractVMLauncher(String classPath, String className, String args, int size) {
 		super(classPath, className, args);
 		VirtualMachine vm = getVM();
 		oct = new ObjectConstructionThread(vm,excludes,size);
@@ -42,7 +42,7 @@ public class ExtractVMLauncher extends VMLauncher {
 	 * @param className The fully qualified name of the to be executed class.
 	 * @param args The arguments to the class' main method.
 	 */
-	public ExtractVMLauncher(String classPath, String className, String[] args){
+	public ExtractVMLauncher(String classPath, String className, String args){
 		this(classPath,className,args,RingBuffer.UNLIMITED_SIZE);
 	}
 	

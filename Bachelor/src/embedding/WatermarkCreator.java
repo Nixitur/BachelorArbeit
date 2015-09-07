@@ -138,7 +138,7 @@ public class WatermarkCreator implements Constants {
 	 * @throws IOException If the class can not be saved.
 	 * @throws IllegalStateException If the class has not yet been created, in which case it may not be dumped.
 	 */
-	public void dump() throws IOException, IllegalStateException{
+	public void dump(String classPath) throws IOException, IllegalStateException{
 		if (!edgeDeletionAllowed){
 			throw new IllegalStateException("The class has not yet been created, so it may not be dumped yet.");
 		}
@@ -146,7 +146,7 @@ public class WatermarkCreator implements Constants {
 		String separator = File.separator;
 		int index = _fullClassName.lastIndexOf('.');
 		String packageName = _fullClassName.substring(0, index);
-		FileOutputStream out = new FileOutputStream(packageName+separator+CLASS_NAME+".class");
+		FileOutputStream out = new FileOutputStream(classPath+separator+packageName+separator+CLASS_NAME+".class");
 		_cg.getJavaClass().dump(out);
 	}
 	

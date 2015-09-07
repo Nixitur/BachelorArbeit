@@ -22,7 +22,7 @@ public class Main {
 		ConfigParser parser = new ConfigParser(fileName);
 		String classPath = parser.classPath();
 		String mainClass = parser.mainClass();
-		String[] arguments = parser.arguments();
+		String arguments = parser.arguments();
 		if (args[0].equals("encode")){
 			int w = parser.encodingNumber();
 			String packageName = parser.watermarkPackage();
@@ -44,7 +44,7 @@ public class Main {
 				}
 			}
 			try {
-				wmark.dump();
+				wmark.dump(classPath);
 			} catch (IllegalStateException e) {
 				// Can never happen because it creates first.
 				e.printStackTrace();

@@ -20,7 +20,7 @@ public class TraceVMLauncher extends util.VMLauncher{
 	 *  for example, "mark" would not be correct, but "myPackage.Marker.mark" would be if myPackage is a package containing a class Marker
 	 *  containing a method mark.
 	 */
-	public TraceVMLauncher(String classPath, String className, String[] args, String markMethodName) {
+	public TraceVMLauncher(String classPath, String className, String args, String markMethodName) {
 		super(classPath, className, args);
 		VirtualMachine vm = getVM();
 		mtt = new MarkTraceThread(vm, excludes, markMethodName);

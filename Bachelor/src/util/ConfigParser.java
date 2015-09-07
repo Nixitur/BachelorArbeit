@@ -16,6 +16,7 @@ public class ConfigParser {
 		prop = new Properties();
 		InputStream input = new FileInputStream(fileName);
 		prop.load(input);
+		input.close();
 	}
 	
 	public String classPath(){
@@ -26,8 +27,8 @@ public class ConfigParser {
 		return prop.getProperty("mainClass");
 	}
 	
-	public String[] arguments(){
-		return prop.getProperty("arguments").split(",");
+	public String arguments(){
+		return prop.getProperty("arguments");
 	}
 	
 	public int encodingNumber(){

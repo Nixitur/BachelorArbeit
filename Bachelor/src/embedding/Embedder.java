@@ -4,10 +4,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.bcel.classfile.JavaClass;
@@ -29,7 +29,7 @@ public class Embedder {
 	private HashMap<TracePoint,Method> traceToMethod;
 	private HashMap<JavaClass,ClassContainer> classToClassCont;
 	private final String _classPath;
-	private final String[] _args;
+	private final String _args;
 	private final String _markMethodName;
 	private final String _className;
 
@@ -40,7 +40,7 @@ public class Embedder {
 	 * @param args The arguments to the main class' main method.
 	 * @param markMethodName the fully qualified name of the mark method(s).
 	 */
-	public Embedder(String classPath, String className, String[] args, String markMethodName) {
+	public Embedder(String classPath, String className, String args, String markMethodName) {
 		_classPath = classPath;
 		_className = className;
 		_args = args;
@@ -145,12 +145,11 @@ public class Embedder {
 		} catch (Exception e) {
 			// Since we explicitly wait until the thread has finished, this should never occur.
 		}
-		return new ArrayList<TracePoint>(tracePointsSet);
+		return new LinkedList<TracePoint>(tracePointsSet);
 	}
 	
 	/**
 	 * <code>traceToClass</code> must have already been correctly initialized before this method may be called. Otherwise, bad times will occur.
-	 * @param tracePoints A collection of TracePoints.
 	 * @return A <code>HashMap</code> that maps every <code>TracePoint</code> found in <code>tracePoints</code> to the
 	 *   <code>Method</code> that it's contained in.
 	 */

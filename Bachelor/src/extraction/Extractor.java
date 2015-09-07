@@ -16,7 +16,7 @@ public class Extractor {
 	//TODO: Basically, allow "root" to also refer to the SECOND node, a body node, instead of the root node, to deal with cases where the first edge is missing.
 	
 	private final String _classPath;
-	private final String[] _args;
+	private final String _args;
 	private final String _className;
 	private ExtractVMLauncher launcher;
 	
@@ -27,7 +27,7 @@ public class Extractor {
 	 * @param args The arguments to the main class' main method.
 	 */
 	
-	public Extractor(String classPath, String className, String[] args) {
+	public Extractor(String classPath, String className, String args) {
 		this._className = className;
 		this._classPath = classPath;
 		this._args = args;
@@ -89,7 +89,7 @@ public class Extractor {
 	}
 
 	public static void main(String[] args){
-		Extractor ext = new Extractor(".", "example.Example", new String[] {"test"});
+		Extractor ext = new Extractor(".", "example.Example", "test");
 		Set<Set<Integer>> rootChildrenSets = ext.run();
 		System.out.println(rootChildrenSets);
 		ext.quitVM();

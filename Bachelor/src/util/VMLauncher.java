@@ -27,7 +27,7 @@ public class VMLauncher {
 	 * @param className The fully qualified name of the to be executed class.
 	 * @param args The arguments to the class' main method.
 	 */
-	public VMLauncher(String classPath, String className, String[] args) {
+	public VMLauncher(String classPath, String className, String args) {
 		this.vm = launchVMAndSuspend(classPath, className,args);
 		Process process = vm.process();
 		Thread errThread = new InToOutThread(process.getErrorStream(), System.err);
@@ -66,7 +66,7 @@ public class VMLauncher {
 		// Make target VM inherit the classpath
 		Connector.Argument optionArg = arguments.get("options");
 		String thisClasspath = System.getProperty("java.class.path");
-        optionArg.setValue("-cp "+thisClasspath+";"+classPath);
+        optionArg.setValue("-cp "+classPath+";"+thisClasspath);
                 
         return arguments;
 	}
@@ -79,13 +79,8 @@ public class VMLauncher {
 	 * @param args The arguments to the class' main method.
 	 * @return
 	 */
-	public VirtualMachine launchVMAndSuspend(String classPath, String className, String[] args){		
-		StringBuffer classAndArgsBuf = new StringBuffer(className);
-		// The main class and its command line arguments
-		for (int i = 0; i < args.length; i++){
-			classAndArgsBuf.append(" "+args[i]);
-		}
-		String classAndArgs = classAndArgsBuf.toString();
+	public VirtualMachine launchVMAndSuspend(String classPath, String className, String args){
+		String classAndArgs = className+" "+args;
 		
 		LaunchingConnector cmdLineConnector = getConnector();
 		Map<String,Connector.Argument> arguments = getArguments(classPath, cmdLineConnector, classAndArgs);

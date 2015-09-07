@@ -127,7 +127,7 @@ public class ObjectNode {
 	 *   and the String representation of the list of children and then another new line.
 	 */
 	public String toString(){
-		String orString = isDummyNode ? "Dummy node "+dummyNumber : ""+or.uniqueID();
+		String orString = isDummyNode ? "Dummy node "+dummyNumber : ""+or.uniqueID()+" ("+or.referenceType().name()+")";
 		return orString;
 		//+"\n"+children.toString()+"\n"
 	}
