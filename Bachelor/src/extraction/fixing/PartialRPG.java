@@ -9,8 +9,8 @@ import java.util.Set;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DirectedSubgraph;
 import org.jgrapht.graph.EdgeReversedGraph;
-
 import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 
@@ -74,7 +74,8 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 		int n = vertexSet().size();
 		int m = edgeSet().size();
 		// m = 2n-3 if unbroken, 2n-4 if any one edge but the one to the sink is missing and 2n-2 if the sink is missing
-		if ((m < 2*n-4) || (m > 2*n-2)){
+		// Also, n must be at least 4 in which case w = 1 and the sink is missing
+		if ((m < 2*n-4) || (m > 2*n-2) || (n < 4)){
 			throw new GraphStructureException();
 		}
 	}
@@ -123,7 +124,7 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 		
 		if ((degree0Nodes.size() == 1) && (degree1Nodes.size() == 1)){
 			// unbroken case
-			if (m != 2*n-3){
+			if ((m != 2*n-3) || (n % 2 == 0)){
 				throw new GraphStructureException();
 			}
 			rsst = new RSST(degree1Nodes.get(0), degree0Nodes.get(0), null, null);
@@ -137,8 +138,8 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 			rsst = getRSSTMissingSink(degree0Nodes, degree1Nodes);
 			type = RPG_TYPE_MISSING_SINK;
 		} else if ((degree0Nodes.size() == 1) && (degree1Nodes.size() == 2)){
-			// any other list edge or any back edge missing
-			if (m != 2*n-4){
+			// any other list edge or any back edge missing; also n = 2*nBento+3, so it must be odd
+			if ((m != 2*n-4) || (n % 2 == 0)){
 				throw new GraphStructureException();
 			}
 			rsst = new RSST();
@@ -149,6 +150,8 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 			} else {
 				type = RPG_TYPE_MISSING_LIST_EDGE;
 			}
+		} else {
+			throw new GraphStructureException();
 		}
 		if ((type == RPG_TYPE_MISSING_BACK_EDGE) || (type == RPG_TYPE_MISSING_LIST_EDGE) || (type == RPG_TYPE_MISSING_ROOT)){
 			// In all these cases, the sink has been found			
@@ -177,7 +180,23 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 					degree1Nodes.remove(rsst.root);
 					rsst.source = degree1Nodes.get(0);
 				} else {
-					throw new GraphStructureException("This graph can not be fixed at the moment as it's missing a list edge to close to the sink.");
+					Set<Integer> firstHalfNodes = new HashSet<Integer>(vertexSet());
+					firstHalfNodes.removeAll(nodesFromSink);
+					DirectedGraph<Integer,DefaultEdge> firstHalf = new DirectedSubgraph<Integer,DefaultEdge>(this,firstHalfNodes,null);
+					int node0degree = firstHalf.inDegreeOf(degree1Nodes.get(0));
+					int node1degree = firstHalf.inDegreeOf(degree1Nodes.get(1));
+					// If sizeOfDFS is too small, then n+1 MUST be in the first half
+					// n+1 is guaranteed to have an edge to the root, so the root's indegree in this subgraph is > 1.
+					// However, the other node can only have indegree 1, from exactly the node that comes before it in the HP
+					if((node0degree == 1) && (node1degree > 1)){
+						rsst.root = degree1Nodes.get(1);
+						rsst.source = degree1Nodes.get(0);
+					} else if ((node1degree == 1) && (node0degree > 1)){
+						rsst.root = degree1Nodes.get(0);
+						rsst.source = degree1Nodes.get(1);
+					} else {
+						throw new GraphStructureException();
+					}
 				}
 			}
 		}
@@ -344,7 +363,8 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 		int n = vertexSet().size();
 		int m = edgeSet().size();
 		RSST result = new RSST();
-		if (m != 2*n-4){
+		// the number of vertices must be odd in this case
+		if ((m != 2*n-4) || (n % 2 == 0)){
 			throw new GraphStructureException();
 		}
 		int index = -1;
@@ -383,7 +403,8 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 		int n = vertexSet().size();
 		int m = edgeSet().size();
 		RSST result = new RSST();
-		if (m != 2*n-2){
+		// the number of vertices must be even in this case
+		if ((m != 2*n-2) || (n % 2 == 1)){
 			throw new GraphStructureException();
 		}
 		int index = -1;

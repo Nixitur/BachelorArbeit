@@ -13,9 +13,8 @@ import util.VMLauncher;
 public class ExtractVMLauncher extends VMLauncher {
 	
 	private ObjectConstructionThread oct;
-	private String[] excludes = {"java.*", "javax.*", "sun.*", "com.sun.*", "org.jpgrapht.graph.*",
-			"org.jgrapht.*", "java.nio.*", "oracle.*", "org.objectweb.asm.*", "javax.swing.*",
-			"jdk.internal.org.*"};
+	private String[] excludes = {"java.*", "javax.*", "sun.*", "com.sun.*", "java.nio.*", "oracle.*", "org.objectweb.asm.*", "javax.swing.*",
+			"jdk.internal.org.*", "org.jpgrapht.graph.*", "org.jgrapht.*"};
 
 	/**
 	 * Creates a new <code>ExtractVMLauncher</code> which immediately launches the Java Virtual Machine for class <code>className</code> and arguments

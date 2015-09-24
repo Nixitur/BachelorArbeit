@@ -4,7 +4,7 @@
 classPath = H:/workspace/BachelorClient/bin
 mainClass = cexample.Main
 # arguments in the same format as in the Java command line interface
-arguments = decode H:/workspace/BachelorClient/config.txt
+arguments = encode H:/workspace/BachelorClient/config.txt
 
 # the following settings are only relevant for encoding
 encodingNumber = 2378

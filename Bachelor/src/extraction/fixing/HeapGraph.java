@@ -25,14 +25,19 @@ public class HeapGraph extends
 		}
 		
 		for (ObjectNode thisNode : constructedNodes){
-			this.addVertex(thisNode);
+			addVertex(thisNode);
 			for (ObjectReference childRef : thisNode.getChildren()){
 				// childNode needs to actually be in constructedNodes or not all nodes have been provided
 				ObjectNode childNode = referenceToNode.get(childRef);
 				if (childNode != null){
 					// Graphs can never contain duplicate vertices, so adding this is harmless, but necessary to ensure successful edge addition
-					this.addVertex(childNode);
-					this.addEdge(thisNode, childNode);
+					addVertex(childNode);
+					// loops and multiple vertices are not allowed
+					if ((containsEdge(thisNode,childNode)) || (thisNode == childNode)){
+						removeVertex(childNode);
+					} else {
+						addEdge(thisNode, childNode);
+					}
 				} else {
 					throw new Exception("A node has been found with a child node not in the argument set. constructedNodes needs to contain "+
 											"all nodes of the graph.");

@@ -1,8 +1,10 @@
 package extraction;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.sun.jdi.ClassNotLoadedException;
@@ -26,9 +28,13 @@ public class ObjectNode {
 	 */
 	public final ObjectReference or;
 	private final List<ObjectReference> children;
+	
+	// The types that have exactly two fields pointing to objects of the same type, mapped to exactly those fields 
+	private static Map<ReferenceType,Set<Field>> validTypesToSameTypeFields = new HashMap<ReferenceType,Set<Field>>();
+	// To make checking much faster, save all the invalid types
+	private static Set<ReferenceType> invalidTypes = new HashSet<ReferenceType>();
 	private static int dummyCount = 0;
 	private int dummyNumber;
-	private Set<Field> sameTypeFields;
 	private boolean isDummyNode = false;
 	
 	/**
@@ -39,7 +45,6 @@ public class ObjectNode {
 		this.or = or;
 		children = new ArrayList<ObjectReference>();
 		dummyNumber = -1;
-		sameTypeFields = new HashSet<Field>();
 	}
 
 	/**
@@ -53,53 +58,100 @@ public class ObjectNode {
 	}
 	
 	/**
-	 * Checks if the provided ObjectReference could be the node of a reducible permutation graph.
+	 * Checks if the provided ObjectReference could be the node of a reducible permutation graph. This check is very
+	 * superficial and only checks the Fields of the ObjectReference's reference type, not the values of those Fields. Use
+	 * <tt>updateChildren</tt> afterwards if the values are needed.
 	 * @param or The ObjectReference referencing an object in the target VM.
 	 * @return A new ObjectNode if the argument could be the node of an RPG; <tt>null</tt> otherwise. 
 	 */
 	public static ObjectNode checkIfValidRPGNode(ObjectReference or){
 		ObjectNode node = new ObjectNode(or);
 		ReferenceType type = or.referenceType();
+		// If we already know that the type is invalid, just skip it
+		if (invalidTypes.contains(type)){
+			return null;
+		}
+		// If we know that the type is already valid, just pass it on and be done with it.
+		if (validTypesToSameTypeFields.containsKey(type)){
+			return node;
+		}
+		Set<Field> sameTypeFields = new HashSet<Field>();
 		List<Field> fields = type.allFields();
 		int countOfSameTypeFields = 0;
-		int notNullValuesOfSameType = 0;
 		for (Field f : fields){
 			// The outneighbor's type must be the same as this node's
 			try {
 				if (f.type().equals(type)){
-					node.sameTypeFields.add(f);
+					sameTypeFields.add(f);
 					countOfSameTypeFields++;
 					// only up to 2 edges are allowed
 					if (countOfSameTypeFields > 2){							
 						break;
 					}
-					Value value = or.getValue(f);
-					// null values are mirrored as null values which is handy
-					if (value != null){
-						notNullValuesOfSameType++;
-						ObjectReference valueOR = (ObjectReference) value;
-						// The outdegree, the number of not-null outneighbors, is always the size of children
-						node.children.add(valueOR);
-					}
 				}
 			} catch (ClassNotLoadedException e) {
+				invalidTypes.add(type);
 				return null;
 			}
 
 		}
 		// My Watermark instances always have two fields of type Watermark
-		// Furthermore, they may have outdegree 0, 1 or 2.
-		if ((countOfSameTypeFields != 2) || (notNullValuesOfSameType > 2)){
+		if (countOfSameTypeFields != 2){
+			invalidTypes.add(type);
 			return null;
 		}
+		validTypesToSameTypeFields.put(type, sameTypeFields);
 		return node;
 	}
+	
+//	/**
+//	 * Checks if the provided ObjectReference could be the node of a reducible permutation graph.
+//	 * @param or The ObjectReference referencing an object in the target VM.
+//	 * @return A new ObjectNode if the argument could be the node of an RPG; <tt>null</tt> otherwise. 
+//	 */
+//	public static ObjectNode checkIfValidRPGNode(ObjectReference or){
+//		ObjectNode node = new ObjectNode(or);
+//		ReferenceType type = or.referenceType();
+//		List<Field> fields = type.allFields();
+//		int countOfSameTypeFields = 0;
+//		int notNullValuesOfSameType = 0;
+//		for (Field f : fields){
+//			// The outneighbor's type must be the same as this node's
+//			try {
+//				if (f.type().equals(type)){
+//					countOfSameTypeFields++;
+//					// only up to 2 edges are allowed
+//					if (countOfSameTypeFields > 2){							
+//						break;
+//					}
+//					Value value = or.getValue(f);
+//					// null values are mirrored as null values which is handy
+//					if (value != null){
+//						notNullValuesOfSameType++;
+//						ObjectReference valueOR = (ObjectReference) value;
+//						// The outdegree, the number of not-null outneighbors, is always the size of children
+//						node.children.add(valueOR);
+//					}
+//				}
+//			} catch (ClassNotLoadedException e) {
+//				return null;
+//			}
+//
+//		}
+//		// My Watermark instances always have two fields of type Watermark
+//		// Furthermore, they may have outdegree 0, 1 or 2.
+//		if ((countOfSameTypeFields < 2) || (notNullValuesOfSameType > 2)){
+//			return null;
+//		}
+//		return node;
+//	}
 	
 	/**
 	 * Updates the children.
 	 */
 	public void updateChildren(){
 		children.clear();
+		Set<Field> sameTypeFields = validTypesToSameTypeFields.get(or.referenceType());
 		for (Field f : sameTypeFields){
 			Value value = or.getValue(f);
 			if (value != null){

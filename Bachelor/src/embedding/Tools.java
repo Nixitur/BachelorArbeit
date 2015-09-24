@@ -98,7 +98,7 @@ public class Tools {
 		// Copy hamiltonPath so as to not overwrite it
 		List<Integer> path = new ArrayList<Integer>(hamiltonPath);
 		int length = path.size();
-		if (n > length){
+		if (n >= length){
 			n = length - 1;
 		}
 		List<List<Integer>> result = new ArrayList<List<Integer>>();
