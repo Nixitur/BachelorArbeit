@@ -466,7 +466,7 @@ public class WatermarkCreator implements Constants {
 			}
 		}
 		// TODO: This is just for testing
-		il.append(_factory.createPrintln("buildG"+i+" called"));
+//		il.append(_factory.createPrintln("buildG"+i+" called"));
 		
 		il.append(InstructionFactory.createReturn(Type.VOID));
 		

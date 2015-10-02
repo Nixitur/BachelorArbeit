@@ -31,8 +31,8 @@ public class ConfigParser {
 		return prop.getProperty("arguments");
 	}
 	
-	public int encodingNumber(){
-		return Integer.parseInt(prop.getProperty("encodingNumber"));
+	public long encodingNumber(){
+		return Long.parseLong(prop.getProperty("encodingNumber"));
 	}
 	
 	public String watermarkPackage(){
@@ -66,7 +66,7 @@ public class ConfigParser {
 		} catch (NumberFormatException e){
 			return -1;
 		}
-		int w = encodingNumber();
+		long w = encodingNumber();
 		// n is the bitlength of w
 		int n = (int) Math.ceil(Math.log(w) / Math.log(2));
 		

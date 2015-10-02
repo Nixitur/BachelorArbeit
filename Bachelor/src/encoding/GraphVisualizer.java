@@ -64,7 +64,7 @@ public class GraphVisualizer<V extends Comparable<? super V>> extends JFrame{
 			cell = jgAdapter.getVertexCell(vertex);
 			attr = cell.getAttributes();
 			Rectangle2D newBounds = new Rectangle2D.Double(
-					i * 2 * width,
+					i * 1.5 * width,
 					0,
 					width,
 					height);

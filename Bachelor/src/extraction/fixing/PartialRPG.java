@@ -15,6 +15,7 @@ import org.jgrapht.graph.SimpleDirectedGraph;
 import org.jgrapht.traverse.DepthFirstIterator;
 
 import util.GraphStructureException;
+import util.TimeKeeper;
 
 public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 	private static final long serialVersionUID = 230563163974817736L;
@@ -86,16 +87,20 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 	 */
 	public Set<Integer> checkForIntegrityAndGetRootChildren(){		
 		try {
+			TimeKeeper time = new TimeKeeper("Hamilton path");
 			// Sets the type field correctly and finds root and sink of the graph as well as source and target of missing list edge
 			RSST rsst = getRSST();
 			// Fix missing list edge if possible and store Hamilton Path
 			this.hamiltonPath = reconstructHamiltonPath(rsst);
+			time.stop();
 			// With the list edges fixed, the final and most precise RPG-check can commence
 			if (!checkIfRPG(rsst.root)){
 				return null;
 			}
+			time = new TimeKeeper("rename and tree edges");
 			RepresentativeForest forest = new RepresentativeForest(this,hamiltonPath);
 			Set<Integer> rootChildren = forest.getRootChildren();
+			time.stop();
 			return rootChildren;
 		} catch (Exception e) {
 			return null;

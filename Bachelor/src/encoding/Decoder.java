@@ -102,7 +102,7 @@ public class Decoder<V>{
 	 * @return The number that is encoded in <code>sip</code> per the algorithm of Chroni and Nikolopoulos
 	 * @throws Exception If the argument is not a self-inverting permutation.
 	 */
-	public int decodeSIPToW(int[] sip) throws Exception{
+	public long decodeSIPToW(int[] sip) throws Exception{
 		int[] bitonPerm = decodeSIPToBitonic(sip);
 		int length = bitonPerm.length;
 		int n = (length - 1)/2;
@@ -184,30 +184,30 @@ public class Decoder<V>{
 	 * Decodes the RPG with the algorithm of Bento et al.
 	 * @return The number that is encoded in the given RPG.
 	 */
-	public int decodeRPGBento(){
+	public long decodeRPGBento(){
 		// The rpg has exactly 2n+3 nodes, from 2n+1 to -1
 		int n = (renamedHamiltonPath.size() - 3) / 2;
 		List<Integer> children = new ArrayList<Integer>();
 		for (DefaultEdge edge : tree.outgoingEdgesOf(startNode)){
 			children.add(tree.getEdgeTarget(edge));
 		}
-		int sum = 0;
+		long sum = 0;
 		// Since Bento is 1- instead of 0-indexed, we have to subtract 1
 		for (Integer child : children){
-			sum = (int) (sum + (Math.pow(2, 2*n - child - 1)));
+			sum = (long) (sum + (Math.pow(2, 2*n - child - 1)));
 		}
 		return sum;
 	}
 	
-	public static int decodeRootChildren(Set<Integer> rootChildren){
-		int sum = 0;
+	public static long decodeRootChildren(Set<Integer> rootChildren){
+		long sum = 0;
 		Integer max = Collections.max(rootChildren);
 		int n = (max-1)/2;
 		for (Integer child : rootChildren){
 			if (child == max){
 				continue;
 			}
-			sum = (int) (sum + (Math.pow(2, 2*n - child)));
+			sum = (long) (sum + (Math.pow(2, 2*n - child)));
 		}
 		return sum;
 	}

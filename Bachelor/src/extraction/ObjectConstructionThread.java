@@ -3,6 +3,7 @@ package extraction;
 import com.sun.jdi.IncompatibleThreadStateException;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
+import com.sun.jdi.StackFrame;
 import com.sun.jdi.VirtualMachine;
 import com.sun.jdi.event.Event;
 import com.sun.jdi.event.MethodExitEvent;
@@ -21,7 +22,7 @@ public class ObjectConstructionThread extends QueueThread {
 	 * @param size The size of the ring buffer.
 	 */
 	public ObjectConstructionThread(VirtualMachine vm, String[] excludes, int size) {
-		super(vm, excludes,ACTIVATE_METHOD_EXIT_REQUEST);
+		super(vm, excludes,ACTIVATE_METHOD_EXIT_REQUEST, "object extraction");
 		this.vm = vm;
 		constructedNodes = new RingBuffer<ObjectNode>(size);
 	}
@@ -46,17 +47,21 @@ public class ObjectConstructionThread extends QueueThread {
 			return;
 		}
 		try {
-			ObjectReference thiz = mExE.thread().frame(0).thisObject();
-			// Don't even save objects that are not valid nodes.
-			// This might make it take longer, but requires less disabling of GC when edges are broken
-			// Don't save the node, though
-			ObjectNode node = ObjectNode.checkIfValidRPGNode(thiz);
-			if (node != null){
-				constructedNodes.add(node);
-				thiz.disableCollection();
+			StackFrame frame = mExE.thread().frame(0);
+			try {
+				ObjectReference thiz = frame.thisObject();
+				// Don't even save objects that are not valid nodes.
+				// This might make it take longer, but requires less disabling of GC when edges are broken
+				// Don't save the node, though
+				ObjectNode node = ObjectNode.checkIfValidRPGNode(thiz);
+				if (node != null){
+					constructedNodes.add(node);
+					thiz.disableCollection();
+				}
+			} catch (com.sun.jdi.InternalException e2){
+				// I'll be damned if I can figure out why this is happening, but if thisObject can't be gotten, just ignore the shit out of this object
 			}
 		} catch (IncompatibleThreadStateException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 	}

@@ -15,12 +15,12 @@ public class Tools {
 	 * @param w The number to encode in base 2
 	 * @return The base-2 representation of <code>w</code>
 	 */
-	static int[] bitrep(int w){
+	static int[] bitrep(long w){
 		int n = (int) Math.floor(Math.log((double)w) / Math.log(2.0))+1;
-		int rest = w;
+		long rest = w;
 		int[] result = new int[n];
 		for (int i = n-1;i>=0;i--){
-			result[i] = rest % 2;
+			result[i] = (int) (rest % 2);
 			rest = rest / 2;
 		}		
 		return result;
@@ -31,12 +31,12 @@ public class Tools {
 	 * @param b A base-2 representation of a number, i.e. it only consists of 0 and 1.
 	 * @return The number represented by <code>b</code>.
 	 */
-	static int bitrepToW(int[] b){
-		int result = 0;
+	static long bitrepToW(int[] b){
+		long result = 0;
 		int length = b.length;
 		for (int i = 0; i < length; i++){
 			if (b[i] == 1){
-				result = (int) (result + (Math.pow(2, length-i-1)));
+				result = (long) (result + (Math.pow(2, length-i-1)));
 			}
 		}
 		return result;

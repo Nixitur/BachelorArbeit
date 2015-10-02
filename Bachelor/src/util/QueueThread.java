@@ -19,6 +19,7 @@ public abstract class QueueThread extends Thread {
 
 	private VirtualMachine vm;
 	private EventRequestManager erm;
+	private String name;
 	
 	public static final int ACTIVATE_METHOD_ENTRY_REQUEST = -1;
 	public static final int ACTIVATE_METHOD_EXIT_REQUEST = 1;
@@ -31,7 +32,8 @@ public abstract class QueueThread extends Thread {
 	 * @param vm The <code>VirtualMachine</code> to observe.
 	 * @param excludes Strings of class patterns to exclude, e.g. Strings like "java.*" or "*.Foo".
 	 */
-	public QueueThread(VirtualMachine vm, String[] excludes, int flags) {
+	public QueueThread(VirtualMachine vm, String[] excludes, int flags, String name) {
+		this.name = name;
 		this.vm = vm;
 		this.erm = vm.eventRequestManager();
 		
@@ -61,6 +63,7 @@ public abstract class QueueThread extends Thread {
 	 * Runs this thread, waiting for events of class <code>MethodEntryEvent</code> or <code>MethodExitEvent</code>s.
 	 */
 	public void run() {
+		TimeKeeper time = new TimeKeeper(name);
 		EventQueue queue = vm.eventQueue();
 		everything:
 		while(true){
@@ -86,6 +89,7 @@ public abstract class QueueThread extends Thread {
 				break;
 			}
 		}
+		time.stop();
 	}
 	
 	/**

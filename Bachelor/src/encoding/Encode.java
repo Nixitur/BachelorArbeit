@@ -23,7 +23,7 @@ public class Encode{
 	 * @return The bitonic permutation of <code>w</code> as per the algorithm of Chroni and Nikolopoulos.
 	 *         It is 0-indexed instead of 1-indexed to make calculations simpler.
 	 */
-	private static int[] encodeWToBitonic(int w){
+	private static int[] encodeWToBitonic(long w){
 		int[] flipB = Tools.bitFlip(Tools.bitrep(w));
 		int n = flipB.length;
 		int n2 = n * 2 + 1;
@@ -88,7 +88,7 @@ public class Encode{
 	 * @return The self-inverting permutation of <code>w</code> as per the algorithm of Chroni
 	 *         and Nikolopoulos. It is 0-indexed instead of 1-indexed to make calculations simpler.
 	 */
-	public static int[] encodeWToSIP(int w){
+	public static int[] encodeWToSIP(long w){
 		int[] bitonPerm = encodeWToBitonic(w);
 		int n = bitonPerm.length;
 		int i = 0;

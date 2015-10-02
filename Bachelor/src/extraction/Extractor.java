@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import util.TimeKeeper;
 import extraction.fixing.HeapGraph;
 import extraction.fixing.PartialRPG;
 
@@ -34,16 +35,18 @@ public class Extractor {
 	}
 	
 	/**
-	 * Executes the given main class, extracting all embedded RPGs.
-	 * @return A list of all RPGS that are embedded in the program.
+	 * Executes the given main class, extracting the children of the root of every RPG.
+	 * @return The children of the root of every RPG embedded in the program.
 	 */
 	public Set<Set<Integer>> run(){
 		List<ObjectNode> constructedNodes = extractConstructedNodes(RingBuffer.UNLIMITED_SIZE);
 		Set<ObjectNode> nodeSet = new HashSet<ObjectNode>(constructedNodes);
 		Set<Set<Integer>> rootChildrenSets = new HashSet<Set<Integer>>();
 		try {
+			TimeKeeper time = new TimeKeeper("components");
 			HeapGraph heapGraph = new HeapGraph(nodeSet);
 			Set<PartialRPG> subgraphs = heapGraph.getConnectedComponents();
+			time.stop();
 			for (PartialRPG rpg : subgraphs){
 				Set<Integer> rootChildren = rpg.checkForIntegrityAndGetRootChildren();
 				if (rootChildren != null){

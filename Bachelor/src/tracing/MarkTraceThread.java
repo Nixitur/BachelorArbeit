@@ -43,7 +43,7 @@ public class MarkTraceThread extends QueueThread {
 	 *  for example "mark" would not be correct, but "myPackage.Marker.mark" would be.
 	 */
 	public MarkTraceThread(VirtualMachine vm, String[] excludes, String markMethodName) {
-		super(vm, excludes, ACTIVATE_METHOD_ENTRY_REQUEST);
+		super(vm, excludes, ACTIVATE_METHOD_ENTRY_REQUEST, "tracing");
 		this.markMethodName = markMethodName;
 		tracePoints = new LinkedHashSet<TracePoint>();
 		toBeDeleted = new HashSet<TracePoint>();

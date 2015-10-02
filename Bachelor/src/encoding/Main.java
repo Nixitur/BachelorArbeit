@@ -17,7 +17,7 @@ public class Main {
 	private Main(){}
 	
 	public static void main(String[] args){
-		int w;
+		long w;
 		if (args.length == 0){
 			w = 5;
 		} else {
@@ -27,7 +27,7 @@ public class Main {
 		int[] sip = Encode.encodeWToSIP(w);
 		System.out.println("The SIP is:\n"+Arrays.toString(sip));
 		DirectedGraph<Integer, DefaultEdge> graph = Encode.encodeSIPtoRPG(sip);
-		//new GraphVisualizer(graph);
+		new GraphVisualizer<Integer>(graph);
 		System.out.println("The graph is:\n"+graph.toString()+"\n");
 		try {
 			System.out.println("Now for the decoding of the graph...");
@@ -36,7 +36,7 @@ public class Main {
 			
 			int[] sip2 = decoder.decodeRPGToSIP();
 			System.out.println("The decoding algorithm of Chroni and Nikolopoulos gives the SIP:\n"+Arrays.toString(sip2));
-			int w2 = decoder.decodeSIPToW(sip2);
+			long w2 = decoder.decodeSIPToW(sip2);
 			System.out.println("Which decodes to: "+w2);
 		} catch (Exception e) {
 			e.printStackTrace();
