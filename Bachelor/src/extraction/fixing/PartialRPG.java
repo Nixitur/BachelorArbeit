@@ -98,8 +98,22 @@ public class PartialRPG extends SimpleDirectedGraph<Integer, DefaultEdge> {
 				return null;
 			}
 			time = new TimeKeeper("rename and tree edges");
-			RepresentativeForest forest = new RepresentativeForest(this,hamiltonPath);
-			Set<Integer> rootChildren = forest.getRootChildren();
+			Set<Integer> rootChildren;
+			if (type == RPG_TYPE_MISSING_BACK_EDGE){
+				RepresentativeForest forest = new RepresentativeForest(this,hamiltonPath);
+				rootChildren = forest.getRootChildren();
+			} else {
+				HashMap<Integer,Integer> nodeToInt = GraphTools.renameNodes(hamiltonPath);
+				Set<DefaultEdge> rootEdges = incomingEdgesOf(rsst.root);
+				Set<Integer> children = new HashSet<Integer>();
+				for (DefaultEdge e : rootEdges){
+					children.add(getEdgeSource(e));
+				}
+				rootChildren = new HashSet<Integer>();
+				for(Integer node : children){
+					rootChildren.add(nodeToInt.get(node));
+				}
+			}
 			time.stop();
 			return rootChildren;
 		} catch (Exception e) {

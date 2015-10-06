@@ -48,13 +48,13 @@ public class Main {
 					wmark.deleteTreeEdge(edgeNumber);
 				}
 			}
+			time.stop();
 			try {
 				wmark.dump(classPath);
 			} catch (IllegalStateException e) {
 				// Can never happen because it creates first.
 				e.printStackTrace();
 			}
-			time.stop();
 			String wmarkClassName = wmark.getClassName();
 
 			time = new TimeKeeper("mark call replacement");

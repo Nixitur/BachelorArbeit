@@ -22,6 +22,7 @@ class ClassContainer extends ClassGen{
 	private InstructionFactory _factory;
 	private JavaClass _clazz;
 	private HashMap<Method,MethodContainer> markedMethodsToContainers;
+	private HashMap<String,Method> sigToMethod;
 
 	/**
 	 * Constructs a new ClassContainer.
@@ -35,18 +36,26 @@ class ClassContainer extends ClassGen{
 		_cp = getConstantPool();
 		_factory = new InstructionFactory(this,_cp);
 		markedMethodsToContainers = new HashMap<Method,MethodContainer>();
+		Method[] methodsA = clazz.getMethods();
+		sigToMethod = new HashMap<String,Method>();		
+		for (Method method : methodsA){
+			String sig = Tools.methodSig(clazz, method);
+			sigToMethod.put(sig, method);
+		}
 	}
 	
 	/**
 	 * Adds a new MethodContainer to this instance that deals with the TracePoints contained therein.
 	 * @param method A Method of this class.
 	 */
-	public void newMethodContainer(Method method){
-		if (markedMethodsToContainers.containsKey(method)){
-			return;
+	private MethodContainer newMethodContainer(Method method){
+		MethodContainer methodCont = markedMethodsToContainers.get(method);
+		if (methodCont != null){
+			return methodCont;
 		}
-		MethodContainer methodCont = new MethodContainer(method, getClassName(), _cp, _factory, _watermarkClassName);
+		methodCont = new MethodContainer(method, getClassName(), _cp, _factory, _watermarkClassName);
 		markedMethodsToContainers.put(method, methodCont);
+		return methodCont;
 	}
 	
 	/**
@@ -55,8 +64,13 @@ class ClassContainer extends ClassGen{
 	 * @param trace A TracePoint in a method in a MethodContainer in this instance.
 	 */
 	public void addTracePoint(TracePoint trace){
-		Method method = Tools.findMethod(_clazz, trace.getLoc());
-		markedMethodsToContainers.get(method).addTracePoint(trace);
+		String wantedSig = Tools.methodSig(trace.getLoc());
+		Method method = sigToMethod.get(wantedSig);
+		MethodContainer methodCont = markedMethodsToContainers.get(method);
+		if(methodCont == null){
+			methodCont = newMethodContainer(method);
+		}
+		methodCont.addTracePoint(trace);		
 	}
 	
 	/**

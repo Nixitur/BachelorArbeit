@@ -11,7 +11,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.bcel.classfile.JavaClass;
-import org.apache.bcel.classfile.Method;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 
@@ -26,7 +25,6 @@ public class Embedder {
 	
 	private List<TracePoint> tracePoints;
 	private HashMap<TracePoint,JavaClass> traceToClass;
-	private HashMap<TracePoint,Method> traceToMethod;
 	private HashMap<JavaClass,ClassContainer> classToClassCont;
 	private final String _classPath;
 	private final String _args;
@@ -65,7 +63,6 @@ public class Embedder {
 	 * @throws IOException If the files can not be saved.
 	 */
 	public void dump(String watermarkClassName, int noOfBuildMethods) throws IOException{
-		traceToMethod = getMethods();
 		classToClassCont = new HashMap<JavaClass,ClassContainer>();
 		setUpContainers(watermarkClassName, noOfBuildMethods);
 		processTracePoints(_classPath);
@@ -84,7 +81,6 @@ public class Embedder {
 				break;
 			}
 			JavaClass clazz = traceToClass.get(trace);
-			Method method = traceToMethod.get(trace);
 			ClassContainer classCont;
 			if (!classToClassCont.containsKey(clazz)){
 				classCont = new ClassContainer(clazz, watermarkClassName);
@@ -92,7 +88,6 @@ public class Embedder {
 			} else {
 				classCont = classToClassCont.get(clazz);
 			}
-			classCont.newMethodContainer(method);
 			classCont.addTracePoint(trace);
 			indexOfCurrentTrace++;
 		}
@@ -146,19 +141,5 @@ public class Embedder {
 			// Since we explicitly wait until the thread has finished, this should never occur.
 		}
 		return new LinkedList<TracePoint>(tracePointsSet);
-	}
-	
-	/**
-	 * <code>traceToClass</code> must have already been correctly initialized before this method may be called. Otherwise, bad times will occur.
-	 * @return A <code>HashMap</code> that maps every <code>TracePoint</code> found in <code>tracePoints</code> to the
-	 *   <code>Method</code> that it's contained in.
-	 */
-	private HashMap<TracePoint,Method> getMethods(){
-		HashMap<TracePoint,Method> result = new HashMap<TracePoint,Method>();
-		for (TracePoint trace : traceToClass.keySet()){
-			Method method = Tools.findMethod(traceToClass.get(trace), trace.getLoc());
-			result.put(trace, method);
-		}
-		return result;
 	}
 }

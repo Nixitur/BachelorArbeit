@@ -79,7 +79,7 @@ public class WatermarkCreator implements Constants {
 			MethodGen method = createBuildGi(i);
 			_buildMethods.add(method);
 		}
-		createMain();
+//		createMain();
 		edgeDeletionAllowed = true;
 		return _splitNodes.size();
 	}
@@ -357,23 +357,23 @@ public class WatermarkCreator implements Constants {
 		il.dispose();
 	}
 	
-	/**
-	 * Creates a <code>public static void main(String[] args)</code> method that calls all buildG# methods in order.
-	 * This is solely for testing, don't actually leave this in. 
-	 */
-	private void createMain(){
-		InstructionList il = new InstructionList();
-		MethodGen method = new MethodGen(ACC_PUBLIC | ACC_STATIC, Type.VOID, new Type[] { new ArrayType(Type.STRING, 1) }, new String[] { "arg0" }, "main", _fullClassName, il, _cp);
-		
-		for (int i = 0; i < _splitNodes.size(); i++){
-			il.append(_factory.createInvoke(_fullClassName, "buildG"+i, Type.VOID, Type.NO_ARGS, Constants.INVOKESTATIC));
-		}
-		il.append(InstructionFactory.createReturn(Type.VOID));
-		method.setMaxStack();
-	    method.setMaxLocals();
-	    _cg.addMethod(method.getMethod());
-	    il.dispose();
-	}
+//	/**
+//	 * Creates a <code>public static void main(String[] args)</code> method that calls all buildG# methods in order.
+//	 * This is solely for testing, don't actually leave this in. 
+//	 */
+//	private void createMain(){
+//		InstructionList il = new InstructionList();
+//		MethodGen method = new MethodGen(ACC_PUBLIC | ACC_STATIC, Type.VOID, new Type[] { new ArrayType(Type.STRING, 1) }, new String[] { "arg0" }, "main", _fullClassName, il, _cp);
+//		
+//		for (int i = 0; i < _splitNodes.size(); i++){
+//			il.append(_factory.createInvoke(_fullClassName, "buildG"+i, Type.VOID, Type.NO_ARGS, Constants.INVOKESTATIC));
+//		}
+//		il.append(InstructionFactory.createReturn(Type.VOID));
+//		method.setMaxStack();
+//	    method.setMaxLocals();
+//	    _cg.addMethod(method.getMethod());
+//	    il.dispose();
+//	}
 	
 	/**
 	 * Creates code that builds the <code>i</code>-th subgraph. 
@@ -444,26 +444,27 @@ public class WatermarkCreator implements Constants {
 			}
 		}
 		
-		// Go through all vertices except for vertex -1
+		// Go through all vertices that were used in this subgraph
 		Integer index;
-		for (Integer j = 0; j < _noOfVertices - 1; j++){
-			// if that vertex is actually used in this method, get its index
-			if((index = vertexToVarIndex.get(j)) != null){
-				// push array on stack
-				il.append(getArray());
-				// push desired array index on stack
-				il.append(new PUSH(_cp, j.intValue()));
-				// If it still has neighbors remaining, e.g. if it still needs to be dealt with
-				if(remainingNeighbors.get(j) > 0){					
-					// push object to be stored on stack
-					il.append(InstructionFactory.createLoad(Type.OBJECT, index));
-				} else {
-					// push null on stack
-					il.append(InstructionConstants.ACONST_NULL);				
-				}
-				// store local var or null in array at index j
-				il.append(InstructionConstants.AASTORE);
+		for (Object o : vertexToVarIndex.keySet()){
+			Integer j = (Integer) o;
+			if (j < 0){
+				continue;
 			}
+			index = vertexToVarIndex.get(j);
+			il.append(getArray());
+			// push desired array index on stack
+			il.append(new PUSH(_cp, j.intValue()));
+			// If it still has neighbors remaining, e.g. if it still needs to be dealt with
+			if(remainingNeighbors.get(j) > 0){					
+				// push object to be stored on stack
+				il.append(InstructionFactory.createLoad(Type.OBJECT, index));
+			} else {
+				// push null on stack
+				il.append(InstructionConstants.ACONST_NULL);				
+			}
+			// store local var or null in array at index j
+			il.append(InstructionConstants.AASTORE);
 		}
 		// TODO: This is just for testing
 //		il.append(_factory.createPrintln("buildG"+i+" called"));

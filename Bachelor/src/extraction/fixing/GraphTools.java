@@ -1,7 +1,9 @@
 package extraction.fixing;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import org.jgrapht.DirectedGraph;
@@ -36,5 +38,15 @@ public class GraphTools {
 		}
 		return result;
 	}
-
+	
+	public static <V> HashMap<V,Integer> renameNodes(List<V> hamiltonPath){
+		HashMap<V,Integer> result = new HashMap<V,Integer>();
+		// 2n+3 nodes, the highest one is 2n+2
+		int index = hamiltonPath.size() - 1;
+		for (V node : hamiltonPath){
+			result.put(node, index);
+			index--;
+		}
+		return result;
+	}
 }

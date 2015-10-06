@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+
 import org.apache.bcel.classfile.ClassParser;
 import org.apache.bcel.classfile.JavaClass;
 
@@ -25,7 +26,7 @@ import com.sun.jdi.ReferenceType;
  *
  */
 public class Tools {
-
+	
 	/**
 	 * No creation of instances necessary or desirable.
 	 */
@@ -157,32 +158,13 @@ public class Tools {
 	}
 
 	/**
-	 * Finds a BCEL method that contains a given code location in a given class.
-	 * @param clazz The class that the code location is found in.
-	 * @param loc The code location.
-	 * @return The BCEL method that is a method in <code>clazz</code> and contains the Location <code>loc</code>
-	 *   in it. <code>null</code> if no such method is found.
-	 */
-	static org.apache.bcel.classfile.Method findMethod(JavaClass clazz, com.sun.jdi.Location loc){
-		String wantedSig = methodSig(loc);
-		org.apache.bcel.classfile.Method[] methods = clazz.getMethods();
-		org.apache.bcel.classfile.Method testMethod;
-		for (int i = 0; i < methods.length; i++){
-			testMethod = methods[i];
-			if (methodSig(clazz, testMethod).equals(wantedSig)){
-				return testMethod;
-			}
-		}
-		return null;
-	}
-
-	/**
 	 * Parses .class files and returns a Map that maps the paths to these files to the corresponding <code>JavaClass</code>.
 	 * @param pathsToClassFiles Contains paths to .class files relative to the working directory.
 	 * @return Maps each path of a .class file to its parsed <code>JavaClass</code>.
 	 */
 	static HashMap<TracePoint,JavaClass> getClasses(Collection<TracePoint> tracePoints, String classPath){
 		HashMap<TracePoint,JavaClass> result = new HashMap<TracePoint,JavaClass>();
+		HashMap<String,JavaClass> foundClasses = new HashMap<String,JavaClass>();
 		ClassParser parser;
 		JavaClass clazz = null;
 		String sig;
@@ -190,16 +172,19 @@ public class Tools {
 			sig = methodSig(trace.getLoc());
 			int i = sig.indexOf('.');
 			sig = sig.substring(0, i+1)+"class";
-			if (!result.containsKey(trace)){
-				try {
-					// TODO: This mostly works, I guess, but there may be multiple class paths. Maybe use a URLClassLoader?
-					parser = new ClassParser(classPath+"/"+sig);
-					clazz = parser.parse();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				result.put(trace, clazz);
+			clazz = foundClasses.get(sig);
+			if (clazz != null){
+				result.put(trace,clazz);
+				continue;
 			}
+			try {
+				parser = new ClassParser(classPath+"/"+sig);
+				clazz = parser.parse();
+				foundClasses.put(sig,clazz);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+			result.put(trace, clazz);
 		}
 		return result;
 	}
