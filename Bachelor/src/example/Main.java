@@ -27,7 +27,7 @@ public class Main {
 		String arguments = parser.arguments();
 		if (args[0].equals("encode")){
 			long w = parser.encodingNumber();
-			String packageName = parser.watermarkPackage();
+			String fullClassName = parser.watermarkClass();
 			time = new TimeKeeper("encoding");
 			int[] sip = encoding.Encode.encodeWToSIP(w);
 			DirectedGraph<Integer, DefaultEdge> graph = encoding.Encode.encodeSIPtoRPG(sip);
@@ -35,17 +35,26 @@ public class Main {
 
 			embedding.Embedder embedder = new embedding.Embedder(classPath, mainClass, arguments, parser.markMethod());
 			int noOfTracePoints = embedder.run();
+			
+			if (noOfTracePoints == 0){
+				System.out.println("No trace points hit. Try again.");
+				return;
+			}
 
 			time = new TimeKeeper("wmark creation");
-			embedding.WatermarkCreator wmark = new embedding.WatermarkCreator(packageName, graph, noOfTracePoints);
+			embedding.WatermarkCreator wmark = new embedding.WatermarkCreator(fullClassName, graph, noOfTracePoints);
 			int noOfBuildMethods = wmark.create();
-			int edgeType = parser.edgeType();
-			int edgeNumber = parser.edgeNumber();
-			if (edgeNumber > 0){
-				if (edgeType == ConfigParser.LIST_EDGE){
-					wmark.deleteListEdge(edgeNumber);
-				} else if (edgeType == ConfigParser.TREE_EDGE){
-					wmark.deleteTreeEdge(edgeNumber);
+			int[] flipEdgeNumbers = parser.flipEdgeNumbers();
+			for (int num : flipEdgeNumbers){
+				wmark.edgeFlip(num);
+			}
+			int deleteEdgeType = parser.deleteEdgeType();
+			int deleteEdgeNumber = parser.deleteEdgeNumber();
+			if (deleteEdgeNumber > 0){
+				if (deleteEdgeType == ConfigParser.LIST_EDGE){
+					wmark.deleteListEdge(deleteEdgeNumber);
+				} else if (deleteEdgeType == ConfigParser.TREE_EDGE){
+					wmark.deleteTreeEdge(deleteEdgeNumber);
 				}
 			}
 			time.stop();

@@ -104,7 +104,9 @@ public class Tools {
 		}
 		List<List<Integer>> result = new ArrayList<List<Integer>>();
 		// length of one slice
+		
 		int m = length / n;
+			
 		// how many need to be overfilled
 		int p = length % n;
 		int pTracker = 1;

@@ -21,7 +21,6 @@ import java.util.List;
  *
  */
 public class WatermarkCreator implements Constants {
-	public static final String 		CLASS_NAME = "Watermark";
 	private static final String		ARRAY_NAME = "array";
 	private static final String		E1_NAME = "e1";
 	private static final String		E2_NAME = "e2";
@@ -36,21 +35,25 @@ public class WatermarkCreator implements Constants {
 	private final HashMap<Integer,Integer> remainingNeighbors;
 	private final List<MethodGen> 	_buildMethods;
 	
-	private boolean edgeDeletionAllowed = false;
+	private boolean manipulationAllowed = false;
+	private int edgeDeleted = -1;
 	
+	// Each element of these lists is three InstructionHandle, the last of which holds the actual field access
 	private final List<List<InstructionHandle>> _listEdgeInstructions;
 	private final List<List<InstructionHandle>> _treeEdgeInstructions;
 	
 	/**
 	 * Creates a new WaterMarkCreator.
-	 * @param packageName The package that the class should have. 
+	 * @param fullClassName The full, qualified name of the Watermark class. Integrity of name is not checked, make sure to do that beforehand or it might just crash. 
 	 * @param graph The RPG that is to be embedded in the code.
 	 * @param noOfSubgraphs The number of subgraphs that <code>graph</code> should be split up into. If this is larger than
 	 * the number of vertices in graph, this number will be set to the number of vertices.
 	 */
-	public WatermarkCreator(String packageName, DirectedGraph<Integer,DefaultEdge> graph, int noOfSubgraphs) {
-		_fullClassName = packageName+"."+CLASS_NAME;
-		_cg = new ClassGen(_fullClassName, "java.lang.Object", CLASS_NAME+".java", ACC_PUBLIC | ACC_SUPER, new String[] {  });
+	public WatermarkCreator(String fullClassName, DirectedGraph<Integer,DefaultEdge> graph, int noOfSubgraphs) {
+		_fullClassName = fullClassName;
+		int i = fullClassName.lastIndexOf(".");
+		String className = fullClassName.substring(i+1, fullClassName.length());
+		_cg = new ClassGen(_fullClassName, "java.lang.Object", className+".java", ACC_PUBLIC | ACC_SUPER, new String[] {  });
 		_cp = _cg.getConstantPool();
 		_factory = new InstructionFactory(_cg,_cp);
 		_graph = graph;
@@ -80,7 +83,7 @@ public class WatermarkCreator implements Constants {
 			_buildMethods.add(method);
 		}
 //		createMain();
-		edgeDeletionAllowed = true;
+		manipulationAllowed = true;
 		return _splitNodes.size();
 	}
 	
@@ -96,16 +99,17 @@ public class WatermarkCreator implements Constants {
 			_cg.addMethod(method.getMethod());
 			method.getInstructionList().dispose();
 		}
-		edgeDeletionAllowed = false;
+		manipulationAllowed = false;
 	}
 	
 	/**
 	 * Deletes the list edge from the vertex i to the vertex i-1. The indices go from 1 to n-1 where n is the number of vertices in the graph.
+	 * Warning: If you flip a vertex' edges and also delete one of those edges, the flipping must come first.
 	 * @param i The index of the vertex.
-	 * @throws IllegalStateException If the class has not yet been created.
+	 * @throws IllegalStateException If the class has not yet been created or the class has already been dumped.
 	 */
 	public void deleteListEdge(int i) throws IllegalStateException{
-		if (!edgeDeletionAllowed){
+		if (!manipulationAllowed){
 			throw new IllegalStateException("Either the class has not been created or it was already dumped. Either way, no edges can be deleted.");
 		}
 		i = i-1;
@@ -114,16 +118,19 @@ public class WatermarkCreator implements Constants {
 			// Just set those three instructions to NOP. Those will be removed when the methods are closed afterwards.
 			handle.setInstruction(InstructionFactory.NOP);
 		}
+		if (!listEdge.isEmpty()){
+			edgeDeleted = i;
+		}		
 	}
 	
 	/**
 	 * Deletes the tree edge originating from the vertex i. The indices go from 1 to n-2 where n is the number of vertices in the graph because
-	 * the root vertex does not have a tree edge.
+	 * the root vertex does not have a tree edge. Warning: If you flip a vertex' edges and also delete one of those edges, the flipping must come first.
 	 * @param i The index of the vertex.
 	 * @throws IllegalStateException If the class has not yet been created or the class has already been dumped.
 	 */
 	public void deleteTreeEdge(int i) throws IllegalStateException{
-		if (!edgeDeletionAllowed){
+		if (!manipulationAllowed){
 			throw new IllegalStateException("Either the class has not been created or it was already dumped. Either way, no edges can be deleted.");
 		}
 		i = i-1;
@@ -131,6 +138,41 @@ public class WatermarkCreator implements Constants {
 		for (InstructionHandle handle : treeEdge){
 			handle.setInstruction(InstructionFactory.NOP);
 		}
+		if (!treeEdge.isEmpty()){
+			edgeDeleted = i;
+		}
+	}
+	
+	/**
+	 * Flips the edges of a specific vertex which in this case means swapping the field access instructions that set the list edge and tree edge field of a specific vertex.
+	 * Warning: If you flip a vertex' edges and also delete one of those edges, the flipping must come first.
+	 * @param i The index of the vertex.
+	 * @throws IllegalStateException If the class has not yet been created, if the class has already been dumped, if the edges of this specific vertex have not been
+	 *    set up right or if one of the edges has already been deleted.
+	 */
+	public void edgeFlip(int i) throws IllegalStateException{
+		if (!manipulationAllowed){
+			throw new IllegalStateException("Either the class has not been created or it was already dumped. Either way, no edges can be flipped.");
+		}
+		i = i-1;
+		if (edgeDeleted == i){
+			throw new IllegalStateException("One of the edges of the vertex "+(i+1)+" has already been deleted, so you may not flip those edges.");
+		}
+		List<InstructionHandle> treeEdgeInstructions = _treeEdgeInstructions.get(i);
+		List<InstructionHandle> listEdgeInstructions = _listEdgeInstructions.get(i);
+		if ((treeEdgeInstructions == null) || (listEdgeInstructions == null)){
+			throw new IllegalStateException("The vertex is missing an edge.");
+		}
+		if ((treeEdgeInstructions.size() != 3) || (listEdgeInstructions.size() != 3)){
+			throw new IllegalStateException("There should be only three InstructionHandles per edge.");
+		}
+		// We only swap the last one, not all of them. If we swapped all of them, we'd have to adjust the local variable indices. 
+		InstructionHandle treeEdge = treeEdgeInstructions.get(2);
+		InstructionHandle listEdge = listEdgeInstructions.get(2);
+		Instruction treeEdgeInstruction = treeEdge.getInstruction();
+		Instruction listEdgeInstruction = listEdge.getInstruction();
+		treeEdge.setInstruction(listEdgeInstruction);
+		listEdge.setInstruction(treeEdgeInstruction);
 	}
 	
 	/**
@@ -139,14 +181,15 @@ public class WatermarkCreator implements Constants {
 	 * @throws IllegalStateException If the class has not yet been created, in which case it may not be dumped.
 	 */
 	public void dump(String classPath) throws IOException, IllegalStateException{
-		if (!edgeDeletionAllowed){
+		if (!manipulationAllowed){
 			throw new IllegalStateException("The class has not yet been created, so it may not be dumped yet.");
 		}
 		closeOffBuildMethods();
 		String separator = File.separator;
-		int index = _fullClassName.lastIndexOf('.');
-		String packageName = _fullClassName.substring(0, index);
-		FileOutputStream out = new FileOutputStream(classPath+separator+packageName+separator+CLASS_NAME+".class");
+		int i = _fullClassName.lastIndexOf('.');
+		String packageName = _fullClassName.substring(0, i);
+		String className = _fullClassName.substring(i+1, _fullClassName.length());
+		FileOutputStream out = new FileOutputStream(classPath+separator+packageName+separator+className+".class");
 		_cg.getJavaClass().dump(out);
 	}
 	
@@ -220,6 +263,7 @@ public class WatermarkCreator implements Constants {
 		List<InstructionHandle> edgeInstructions = new ArrayList<InstructionHandle>();
 		int sourceIndex = vertexToVarIndex.get(sourceVertex).intValue();
 		int targetIndex = vertexToVarIndex.get(targetVertex).intValue();
+		
 		InstructionHandle ins;
 		ins = il.append(InstructionFactory.createLoad(Type.OBJECT, sourceIndex));
 		edgeInstructions.add(ins);
@@ -487,8 +531,8 @@ public class WatermarkCreator implements Constants {
 		int[] sip = Encode.encodeWToSIP(w);
 		DirectedGraph<Integer, DefaultEdge> graph = Encode.encodeSIPtoRPG(sip);
 		
-		String packageName = "example";
-		WatermarkCreator creator = new WatermarkCreator(packageName, graph, k);
+		String fullClassName = "example.Watermark";
+		WatermarkCreator creator = new WatermarkCreator(fullClassName, graph, k);
 		creator.create();
 	}
 }
