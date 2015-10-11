@@ -3,6 +3,8 @@ package util;
 import com.sun.jdi.VMDisconnectedException;
 import com.sun.jdi.event.VMDeathEvent;
 import com.sun.jdi.VirtualMachine;
+import com.sun.jdi.event.BreakpointEvent;
+import com.sun.jdi.event.ClassPrepareEvent;
 import com.sun.jdi.event.Event;
 import com.sun.jdi.event.EventIterator;
 import com.sun.jdi.event.EventQueue;
@@ -18,7 +20,8 @@ import com.sun.jdi.request.*;
 public abstract class QueueThread extends Thread {
 
 	private VirtualMachine vm;
-	private EventRequestManager erm;
+	protected EventRequestManager erm;
+	protected final String[] excludes;
 	private String name;
 	
 	public static final int ACTIVATE_METHOD_ENTRY_REQUEST = -1;
@@ -33,26 +36,18 @@ public abstract class QueueThread extends Thread {
 	 * @param excludes Strings of class patterns to exclude, e.g. Strings like "java.*" or "*.Foo".
 	 */
 	public QueueThread(VirtualMachine vm, String[] excludes, int flags, String name) {
+		this.excludes = excludes;
 		this.name = name;
 		this.vm = vm;
 		this.erm = vm.eventRequestManager();
 		
-		if (flags <= 0){
-			MethodEntryRequest mEnR = erm.createMethodEntryRequest();
-			for (int i = 0; i < excludes.length; i++){
-				mEnR.addClassExclusionFilter(excludes[i]);
-			}
-			mEnR.setSuspendPolicy(MethodEntryRequest.SUSPEND_ALL);
-			mEnR.enable();
+		ClassPrepareRequest cPrR = erm.createClassPrepareRequest();
+		for (int i = 0; i < excludes.length; i++){
+			cPrR.addClassExclusionFilter(excludes[i]);
 		}
-		if (flags >= 0){
-			MethodExitRequest mExR = erm.createMethodExitRequest();
-			for (int i = 0; i < excludes.length; i++){
-				mExR.addClassExclusionFilter(excludes[i]);
-			}
-			mExR.setSuspendPolicy(MethodExitRequest.SUSPEND_ALL);
-			mExR.enable();
-		}
+		cPrR.setSuspendPolicy(MethodEntryRequest.SUSPEND_ALL);
+		cPrR.enable();
+		
 		VMDeathRequest deathR = erm.createVMDeathRequest();
 		deathR.setSuspendPolicy(VMDeathRequest.SUSPEND_ALL);
 		deathR.enable();
@@ -77,8 +72,12 @@ public abstract class QueueThread extends Thread {
 					Event nextEvent = it.nextEvent();
 					if (nextEvent instanceof VMDeathEvent){
 						processDeath();
-					} else {
-						processMethodEvent(nextEvent);
+					} else if (nextEvent instanceof ClassPrepareEvent){
+						ClassPrepareEvent cPrE = (ClassPrepareEvent) nextEvent;
+						processClassPrepareEvent(cPrE);
+					} else if (nextEvent instanceof BreakpointEvent){
+						BreakpointEvent bPoE = (BreakpointEvent) nextEvent;
+						processBreakpoint(bPoE);
 					}
 				}
 				eventSet.resume();
@@ -96,12 +95,18 @@ public abstract class QueueThread extends Thread {
 	 * Called if the target VM disconnects.
 	 */
 	public abstract void processDisconnected();
-
+	
 	/**
-	 * Gets executed each time an event is received.
-	 * @param e The event that is received.
+	 * Gets executed each time a class is prepared.
+	 * @param cPrE The ClassPrepareEvent
 	 */
-	public abstract void processMethodEvent(Event e);
+	public abstract void processClassPrepareEvent(ClassPrepareEvent cPrE);
+	
+	/**
+	 * Gets executed each time a breakpoint is reached.
+	 * @param bPoE The BreakpointEvent
+	 */
+	public abstract void processBreakpoint(BreakpointEvent bPoE);
 	
 	/**
 	 * Called if the target VM is dying. Most importantly, the VM is not yet disconnected at this point.

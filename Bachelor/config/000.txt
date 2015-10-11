@@ -10,7 +10,7 @@ deleteEdgeType = tree
 # list edges go from 1 to 2n+2
 # tree edges go from 1 to 2n+1
 # if the provided bounds are exceeded, the number will be ignored
-deleteEdgeNumber = 14
+deleteEdgeNumber = 5
 
 # for flipping edges; each must be between 1 and 2n+1 because both list and tree edge must exist; delimit by spaces " "
 flipEdgeNumbers = 2 5 34

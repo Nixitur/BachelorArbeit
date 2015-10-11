@@ -12,12 +12,14 @@ import util.UnsupportedArgumentException;
 import com.sun.jdi.IntegerValue;
 import com.sun.jdi.Location;
 import com.sun.jdi.Method;
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.StringReference;
 import com.sun.jdi.Value;
 import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.event.Event;
-import com.sun.jdi.event.MethodEntryEvent;
+import com.sun.jdi.event.BreakpointEvent;
+import com.sun.jdi.event.ClassPrepareEvent;
+import com.sun.jdi.request.BreakpointRequest;
 
 /**
  * This <code>QueueThread</code> specifically waits for calls to a mark method in the target VM and stores
@@ -48,29 +50,26 @@ public class MarkTraceThread extends QueueThread {
 		tracePoints = new LinkedHashSet<TracePoint>();
 		toBeDeleted = new HashSet<TracePoint>();
 	}
-
+	
 	@Override
-	/**
-	 * Processes a received event. If <code>event</code> is a <code>MethodEntryEvent</code> to a mark method (defined as having the name
-	 * <code>markMethodName</code>) with the correct arguments, it adds a <code>TracePoint</code> to <code>tracePoints</code> containing
-	 * the location and value of the call. 
-	 * @param event The event that is received.
-	 * @throws UnsupportedArgumentException if the call to the mark method has too many arguments or arguments of the wrong type.
-	 */
-	public void processMethodEvent(Event event) {
-		if (!(event instanceof MethodEntryEvent)){
-			return;
+	public void processClassPrepareEvent(ClassPrepareEvent cPrE) {
+		ReferenceType type = cPrE.referenceType();
+		List<Method> methods = type.methods();
+		String fullMethodName;
+		for (Method method : methods){			
+			fullMethodName = method.declaringType().name() + "." + method.name();
+			if (fullMethodName.equals(markMethodName)){				
+				BreakpointRequest bPoR = erm.createBreakpointRequest(method.location());
+				bPoR.enable();
+			}
 		}
-		MethodEntryEvent mEnE = ((MethodEntryEvent) event);
-		Method method = mEnE.method();
-		String fullClassName = method.declaringType().name();
-		String fullMethodName = fullClassName + "." + method.name();
-		if (!fullMethodName.equals(markMethodName)){
-			return;
-		}
+	}
+	
+	@Override
+	public void processBreakpoint(BreakpointEvent bPoE){
 		try {
-			StackFrame thisFrame = mEnE.thread().frame(0);
-			StackFrame callerFrame = mEnE.thread().frame(1);			
+			StackFrame thisFrame = bPoE.thread().frame(0);
+			StackFrame callerFrame = bPoE.thread().frame(1);			
 			Location loc = callerFrame.location();
 			List<Value> values = thisFrame.getArgumentValues();
 			Value val = null;

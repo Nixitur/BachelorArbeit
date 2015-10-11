@@ -1,13 +1,17 @@
 package extraction;
 
+import java.util.List;
+
 import com.sun.jdi.IncompatibleThreadStateException;
+import com.sun.jdi.Location;
 import com.sun.jdi.Method;
 import com.sun.jdi.ObjectReference;
+import com.sun.jdi.ReferenceType;
 import com.sun.jdi.StackFrame;
 import com.sun.jdi.VirtualMachine;
-import com.sun.jdi.event.Event;
-import com.sun.jdi.event.MethodExitEvent;
-
+import com.sun.jdi.event.BreakpointEvent;
+import com.sun.jdi.event.ClassPrepareEvent;
+import com.sun.jdi.request.BreakpointRequest;
 import util.QueueThread;
 
 public class ObjectConstructionThread extends QueueThread {
@@ -37,17 +41,23 @@ public class ObjectConstructionThread extends QueueThread {
 	}
 
 	@Override
-	public void processMethodEvent(Event e) {
-		if (!(e instanceof MethodExitEvent)){
-			return;
+	public void processClassPrepareEvent(ClassPrepareEvent cPrE) {
+		ReferenceType type = cPrE.referenceType();
+		List<Method> methods = type.methods();
+		for (Method method : methods){
+			if (method.isConstructor()){
+				byte[] bytes = method.bytecodes();
+				Location loc = method.locationOfCodeIndex(bytes.length-1);
+				BreakpointRequest bPoR = erm.createBreakpointRequest(loc);
+				bPoR.enable();
+			}
 		}
-		MethodExitEvent mExE = ((MethodExitEvent) e);
-		Method method = mExE.method();
-		if (!(method.isConstructor())){
-			return;
-		}
+	}
+
+	@Override
+	public void processBreakpoint(BreakpointEvent bPoE) {
 		try {
-			StackFrame frame = mExE.thread().frame(0);
+			StackFrame frame = bPoE.thread().frame(0);
 			try {
 				ObjectReference thiz = frame.thisObject();
 				// Don't even save objects that are not valid nodes.

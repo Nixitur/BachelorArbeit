@@ -8,7 +8,7 @@ public class TraceVMLauncher extends util.VMLauncher{
 	private MarkTraceThread mtt;
 	private String[] excludes = {"java.*", "javax.*", "sun.*", "com.sun.*", "org.jpgrapht.graph.*",
 			"org.jgrapht.*", "java.nio.*", "oracle.*", "org.objectweb.asm.*", "javax.swing.*",
-			"jdk.internal.org.*"};
+			"jdk.internal.org.*", "java.lang.*"};
 
 	/**
 	 * Creates a new <code>VMLauncher</code> which immediately launches the Java Virtual Machine for class <code>className</code> and arguments
