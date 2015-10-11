@@ -14,9 +14,15 @@ public class ConfigParser {
 	private int n = -1;
 	
 	private Properties prop;
+	private static final String defaultConfig = "config/000.txt";
 
-	public ConfigParser(String fileName) throws IOException {
-		prop = new Properties();
+	public ConfigParser(String fileName) throws IOException {		
+		Properties defaultProp = new Properties();	
+		InputStream defaultInput = new FileInputStream(defaultConfig);
+		defaultProp.load(defaultInput);
+		defaultInput.close();
+		
+		prop = new Properties(defaultProp);
 		InputStream input = new FileInputStream(fileName);
 		prop.load(input);
 		input.close();
@@ -44,8 +50,13 @@ public class ConfigParser {
 	}
 	
 	public String watermarkClass(){
-		// TODO: regex-checking for letters, numbers and dot
 		String fullClassName = prop.getProperty("watermarkClass");
+		String[] nameArray = fullClassName.split(".");
+		for (String id : nameArray){
+			if (!isValidIdentifier(id)){
+				throw new IllegalArgumentException("The Watermark class name is invalid.");
+			}
+		}
 //		int i = fullClassName.lastIndexOf(".");
 //		String packageName = fullClassName.substring(0, i);
 //		char first = fullClassName.charAt(i+1);
@@ -57,6 +68,18 @@ public class ConfigParser {
 //		}
 //		fullClassName = packageName+"."+first+truncatedName;
 		return fullClassName;
+	}
+	
+	private boolean isValidIdentifier(String s){
+		if (!Character.isJavaIdentifierStart(s.charAt(0))){
+			return false;
+		}
+		for (int i = 1; i < s.length(); i++){
+			if (!Character.isJavaIdentifierPart(s.charAt(i))){
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	public String markMethod(){

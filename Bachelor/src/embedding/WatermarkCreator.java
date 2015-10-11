@@ -187,9 +187,13 @@ public class WatermarkCreator implements Constants {
 		closeOffBuildMethods();
 		String separator = File.separator;
 		int i = _fullClassName.lastIndexOf('.');
-		String packageName = _fullClassName.substring(0, i);
+		String packages = _fullClassName.substring(0, i).replace('.', separator.charAt(0));
 		String className = _fullClassName.substring(i+1, _fullClassName.length());
-		FileOutputStream out = new FileOutputStream(classPath+separator+packageName+separator+className+".class");
+		String path = classPath+separator+packages;
+		File folder = new File(path);
+		folder.mkdirs();
+		File file = new File(path+separator+className+".class");
+		FileOutputStream out = new FileOutputStream(file);
 		_cg.getJavaClass().dump(out);
 	}
 	

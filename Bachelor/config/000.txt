@@ -1,0 +1,31 @@
+# this default config only consists of program-irrelevant properties
+
+# the number to be encoded
+encodingNumber = 50
+
+# use exactly "tree" or "list" for deleting a tree edge or a list edge respectively; anything else will lead to no deletion
+deleteEdgeType = tree
+
+# let n be the bitlength of the encoding number
+# list edges go from 1 to 2n+2
+# tree edges go from 1 to 2n+1
+# if the provided bounds are exceeded, the number will be ignored
+deleteEdgeNumber = 14
+
+# for flipping edges; each must be between 1 and 2n+1 because both list and tree edge must exist; delimit by spaces " "
+flipEdgeNumbers = 2 5 34
+
+# the rest should be set in a program-specific config file
+
+# WARNING! Currently, only a single path is permitted, not the full range for Java classpaths
+# However, the executed program inherits the embedder's classpath, so that's an alternative
+classPath = 
+mainClass = 
+# arguments in the same format as in the Java command line interface
+arguments = 
+
+# fully qualified name, i.e. [packagename].[ClassName]
+watermarkClass = 
+# all three mark methods must have the same name, apart from the accepted arguments
+# again, fully qualified, i.e. [packagename].[ClassName].[methodName]
+markMethod = 

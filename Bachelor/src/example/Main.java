@@ -46,7 +46,11 @@ public class Main {
 			int noOfBuildMethods = wmark.create();
 			int[] flipEdgeNumbers = parser.flipEdgeNumbers();
 			for (int num : flipEdgeNumbers){
-				wmark.edgeFlip(num);
+				try {
+					wmark.edgeFlip(num);
+				} catch (IllegalStateException e) {
+					// if this vertex can't be edge-flipped, just ignore it
+				}
 			}
 			int deleteEdgeType = parser.deleteEdgeType();
 			int deleteEdgeNumber = parser.deleteEdgeNumber();
@@ -73,7 +77,7 @@ public class Main {
 		if (args[0].equals("decode")){
 			Extractor ext = new Extractor(classPath, mainClass, arguments);
 			Set<Set<Integer>> rootChildrenSets = ext.run();
-			ext.quitVM();
+			//ext.quitVM();
 
 			time = new TimeKeeper("decoding");
 			for (Set<Integer> rootChildren : rootChildrenSets){

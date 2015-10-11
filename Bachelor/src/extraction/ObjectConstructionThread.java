@@ -85,6 +85,7 @@ public class ObjectConstructionThread extends QueueThread {
 			node.updateChildren();
 		}
 		quitNow = true;
-		vm.suspend();
+		// once the children have been set, the actual VM is not necessary anymore, so it just gets forcibly disconnected
+		vm.dispose();
 	}
 }

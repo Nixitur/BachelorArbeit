@@ -81,20 +81,10 @@ public class Extractor {
 			return null;
 		}
 	}
-	
-	/**
-	 * Finally disposes of the VM, letting it run its course. This <strong>must</strong> be called after the graphs have been extracted, 
-	 * otherwise this program will not terminate.
-	 */
-	public void quitVM(){
-		// Let the VM run its course, finally finishing its cruelly prolonged death
-		launcher.getVM().dispose();
-	}
 
 	public static void main(String[] args){
 		Extractor ext = new Extractor(".", "example.Example", "test");
 		Set<Set<Integer>> rootChildrenSets = ext.run();
 		System.out.println(rootChildrenSets);
-		ext.quitVM();
 	}
 }
