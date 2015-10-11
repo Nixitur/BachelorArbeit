@@ -67,13 +67,24 @@ public class ObjectNode {
 	public static ObjectNode checkIfValidRPGNode(ObjectReference or){
 		ObjectNode node = new ObjectNode(or);
 		ReferenceType type = or.referenceType();
-		// If we already know that the type is invalid, just skip it
+		if (isValidType(type)){
+			return node;
+		}
+		return null;
+	}
+	
+	/**
+	 * Tests if the type is valid for Watermark instances, i.e. has two same type fields. Calling this method on a type speeds up future calls.
+	 * @param type The ReferenceType
+	 * @return <tt>true</tt> if instances of this type could be Watermark instances, <tt>false</tt> otherwise.
+	 */
+	public static boolean isValidType(ReferenceType type){
 		if (invalidTypes.contains(type)){
-			return null;
+			return false;
 		}
 		// If we know that the type is already valid, just pass it on and be done with it.
 		if (validTypesToSameTypeFields.containsKey(type)){
-			return node;
+			return true;
 		}
 		Set<Field> sameTypeFields = new HashSet<Field>();
 		List<Field> fields = type.allFields();
@@ -90,18 +101,17 @@ public class ObjectNode {
 					}
 				}
 			} catch (ClassNotLoadedException e) {
-				invalidTypes.add(type);
-				return null;
+				// We only care about the ones that are the same type as this one, so the relevant ones MUST be loaded
 			}
 
 		}
 		// My Watermark instances always have two fields of type Watermark
 		if (countOfSameTypeFields != 2){
 			invalidTypes.add(type);
-			return null;
+			return false;
 		}
 		validTypesToSameTypeFields.put(type, sameTypeFields);
-		return node;
+		return true;
 	}
 	
 //	/**

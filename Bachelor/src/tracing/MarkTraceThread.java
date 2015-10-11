@@ -33,6 +33,7 @@ public class MarkTraceThread extends QueueThread {
 	// I declare it as such because the iteration order being the insertion order is actually important
 	private LinkedHashSet<TracePoint> tracePoints;
 	private Set<TracePoint> toBeDeleted;
+	private String markClassName;
 	private String markMethodName;
 	
 	
@@ -41,12 +42,14 @@ public class MarkTraceThread extends QueueThread {
 	 * methods are not in classes matching the pattern in <code>excludes</code>.
 	 * @param vm The <code>VirtualMachine</code> to observe.
 	 * @param excludes Strings of class patterns to exclude, e.g. Strings like "java.*" or "*.Foo".
-	 * @param markMethodName The full name of the mark method. This needs to contain the package as well as the class, so
+	 * @param fullMarkMethodName The full name of the mark method. This needs to contain the package as well as the class, so
 	 *  for example "mark" would not be correct, but "myPackage.Marker.mark" would be.
 	 */
-	public MarkTraceThread(VirtualMachine vm, String[] excludes, String markMethodName) {
-		super(vm, excludes, ACTIVATE_METHOD_ENTRY_REQUEST, "tracing");
-		this.markMethodName = markMethodName;
+	public MarkTraceThread(VirtualMachine vm, String[] excludes, String fullMarkMethodName) {
+		super(vm, excludes, "tracing");
+		int i = fullMarkMethodName.lastIndexOf('.');
+		markClassName = fullMarkMethodName.substring(0, i);
+		markMethodName = fullMarkMethodName.substring(i+1, fullMarkMethodName.length());
 		tracePoints = new LinkedHashSet<TracePoint>();
 		toBeDeleted = new HashSet<TracePoint>();
 	}
@@ -54,11 +57,13 @@ public class MarkTraceThread extends QueueThread {
 	@Override
 	public void processClassPrepareEvent(ClassPrepareEvent cPrE) {
 		ReferenceType type = cPrE.referenceType();
+		if (!type.name().equals(markClassName)){
+			return;
+		}
+		// The class is loaded, get all its methods
 		List<Method> methods = type.methods();
-		String fullMethodName;
-		for (Method method : methods){			
-			fullMethodName = method.declaringType().name() + "." + method.name();
-			if (fullMethodName.equals(markMethodName)){				
+		for (Method method : methods){
+			if (method.name().equals(markMethodName)){				
 				BreakpointRequest bPoR = erm.createBreakpointRequest(method.location());
 				bPoR.enable();
 			}

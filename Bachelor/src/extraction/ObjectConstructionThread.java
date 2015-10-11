@@ -26,7 +26,7 @@ public class ObjectConstructionThread extends QueueThread {
 	 * @param size The size of the ring buffer.
 	 */
 	public ObjectConstructionThread(VirtualMachine vm, String[] excludes, int size) {
-		super(vm, excludes,ACTIVATE_METHOD_EXIT_REQUEST, "object extraction");
+		super(vm, excludes, "object extraction");
 		this.vm = vm;
 		constructedNodes = new RingBuffer<ObjectNode>(size);
 	}
@@ -43,6 +43,9 @@ public class ObjectConstructionThread extends QueueThread {
 	@Override
 	public void processClassPrepareEvent(ClassPrepareEvent cPrE) {
 		ReferenceType type = cPrE.referenceType();
+		if (!ObjectNode.isValidType(type)){
+			return;
+		}
 		List<Method> methods = type.methods();
 		for (Method method : methods){
 			if (method.isConstructor()){

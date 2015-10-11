@@ -21,11 +21,7 @@ public abstract class QueueThread extends Thread {
 
 	private VirtualMachine vm;
 	protected EventRequestManager erm;
-	protected final String[] excludes;
 	private String name;
-	
-	public static final int ACTIVATE_METHOD_ENTRY_REQUEST = -1;
-	public static final int ACTIVATE_METHOD_EXIT_REQUEST = 1;
 	
 	public boolean quitNow = false;
 	
@@ -35,8 +31,7 @@ public abstract class QueueThread extends Thread {
 	 * @param vm The <code>VirtualMachine</code> to observe.
 	 * @param excludes Strings of class patterns to exclude, e.g. Strings like "java.*" or "*.Foo".
 	 */
-	public QueueThread(VirtualMachine vm, String[] excludes, int flags, String name) {
-		this.excludes = excludes;
+	public QueueThread(VirtualMachine vm, String[] excludes, String name) {
 		this.name = name;
 		this.vm = vm;
 		this.erm = vm.eventRequestManager();
