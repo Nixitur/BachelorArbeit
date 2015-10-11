@@ -65,7 +65,6 @@ public class ObjectConstructionThread extends QueueThread {
 				ObjectReference thiz = frame.thisObject();
 				// Don't even save objects that are not valid nodes.
 				// This might make it take longer, but requires less disabling of GC when edges are broken
-				// Don't save the node, though
 				ObjectNode node = ObjectNode.checkIfValidRPGNode(thiz);
 				if (node != null){
 					constructedNodes.add(node);

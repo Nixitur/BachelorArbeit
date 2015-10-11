@@ -1,10 +1,10 @@
 # this default config only consists of program-irrelevant properties
 
 # the number to be encoded
-encodingNumber = 50
+encodingNumber = 9223372036854775807
 
 # use exactly "tree" or "list" for deleting a tree edge or a list edge respectively; anything else will lead to no deletion
-deleteEdgeType = tree
+deleteEdgeType = list
 
 # let n be the bitlength of the encoding number
 # list edges go from 1 to 2n+2

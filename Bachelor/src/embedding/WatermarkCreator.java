@@ -532,8 +532,7 @@ public class WatermarkCreator implements Constants {
 				k = Integer.parseInt(args[1]);
 			}
 		}
-		int[] sip = Encode.encodeWToSIP(w);
-		DirectedGraph<Integer, DefaultEdge> graph = Encode.encodeSIPtoRPG(sip);
+		DirectedGraph<Integer, DefaultEdge> graph = Encode.encodeWToRPG(w);
 		
 		String fullClassName = "example.Watermark";
 		WatermarkCreator creator = new WatermarkCreator(fullClassName, graph, k);

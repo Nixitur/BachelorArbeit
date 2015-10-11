@@ -29,8 +29,7 @@ public class Main {
 			long w = parser.encodingNumber();
 			String fullClassName = parser.watermarkClass();
 			time = new TimeKeeper("encoding");
-			int[] sip = encoding.Encode.encodeWToSIP(w);
-			DirectedGraph<Integer, DefaultEdge> graph = encoding.Encode.encodeSIPtoRPG(sip);
+			DirectedGraph<Integer, DefaultEdge> graph = encoding.Encode.encodeWToRPG(w);
 			time.stop();
 
 			embedding.Embedder embedder = new embedding.Embedder(classPath, mainClass, arguments, parser.markMethod());

@@ -1,7 +1,10 @@
 package embedding;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.bcel.Constants;
@@ -22,6 +25,7 @@ import org.apache.bcel.generic.PUSH;
 import com.sun.jdi.IntegerValue;
 import com.sun.jdi.Location;
 import com.sun.jdi.StringReference;
+
 import tracing.*;
 
 /**
@@ -74,9 +78,13 @@ class MethodContainer extends MethodGen  implements Constants{
 	public void processTracePoints(){
 		InstructionList il = this.getInstructionList();
 		il.setPositions(true);
-		for (Location loc : locToTracePoint.keySet()){
+		List<Location> locations = new ArrayList<Location>(locToTracePoint.keySet());
+		// Go through the Locations in reverse order, so that the saved code indices are still correct
+		Collections.sort(locations, Collections.reverseOrder());
+		for (Location loc : locations){
 			insertBuildCalls(loc);
 		}
+		il.setPositions(true);
 	}
 	
 	/**
@@ -86,7 +94,7 @@ class MethodContainer extends MethodGen  implements Constants{
 	private void insertBuildCalls(Location loc){
 		InstructionList il = this.getInstructionList();
 		Set<TracePoint> traceSet = locToTracePoint.get(loc);
-		il.setPositions(true);
+		//il.setPositions(true);
 		InstructionHandle markHandle = il.findHandle((int) loc.codeIndex());		
 		boolean isFirst = true;
 		InstructionHandle veryFirstHandle = null;
@@ -115,7 +123,7 @@ class MethodContainer extends MethodGen  implements Constants{
 				lastOfPrevious = currentList.il.getEnd();
 				// Append, not after the markHandle, but after the previous list
 				firstHandle = il.append(last, currentList.il);
-				il.setPositions();
+				//il.setPositions();
 			}			
 		}
 		InstructionHandle nextHandle;
@@ -139,9 +147,9 @@ class MethodContainer extends MethodGen  implements Constants{
 		if (branchOfPrevious != null){
 			branchOfPrevious.setTarget(nextHandle);		
 			// Create a new frame for exactly that branch
-			il.setPositions(true);
+			//il.setPositions(true);
 		} else {
-			il.setPositions();
+			//il.setPositions();
 		}
 	}
 		

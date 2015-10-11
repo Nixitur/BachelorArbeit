@@ -83,12 +83,23 @@ public class Encode{
 	}
 	
 	/**
+	 * Encodes <tt>w</tt> as a canonical reducible permutation graph.
+	 * @param w Any natural number.
+	 * @return The reducible permutation graph of <tt>w</tt> as per the algorithm of Chroni and Nikolopoulos.
+	 *    It is 0-indexed instead of 1-indexed to make calculations easier.
+	 */
+	public static DirectedGraph<Integer,DefaultEdge> encodeWToRPG(long w){
+		int[] sip = encodeWToSIP(w);
+		return encodeSIPtoRPG(sip);
+	}
+	
+	/**
 	 * Encodes <code>w</code> as a self-inverting permutation
 	 * @param w Any natural number
 	 * @return The self-inverting permutation of <code>w</code> as per the algorithm of Chroni
 	 *         and Nikolopoulos. It is 0-indexed instead of 1-indexed to make calculations simpler.
 	 */
-	public static int[] encodeWToSIP(long w){
+	private static int[] encodeWToSIP(long w){
 		int[] bitonPerm = encodeWToBitonic(w);
 		int n = bitonPerm.length;
 		int i = 0;
@@ -116,7 +127,7 @@ public class Encode{
 	 * @return The reducible permutation graph of <code>sip</code> as per the algorithm of Chroni and
 	 *         Nikolopoulos. It is 0-indexed instead of 1-indexed to make calculations simpler.
 	 */
-	public static DirectedGraph<Integer,DefaultEdge> encodeSIPtoRPG(int[] sip){
+	private static DirectedGraph<Integer,DefaultEdge> encodeSIPtoRPG(int[] sip){
 		int[] p = calculateMaxDidom(sip);
 		int n = sip.length;
 		DirectedGraph<Integer,DefaultEdge> graph = new SimpleDirectedGraph<Integer,DefaultEdge>(DefaultEdge.class);
@@ -137,12 +148,13 @@ public class Encode{
 	}
 	
 	public static void main(String[] args){
-		int w = 5;
+		long w = 9223372036854775807L;
 		try {
-			w = Integer.parseInt(args[0]);
+			w = Long.parseLong(args[0]);
 		} catch (Exception e){}
-		int[] sip = encodeWToSIP(w);
-		DirectedGraph<Integer,DefaultEdge> rpg = encodeSIPtoRPG(sip);
+		util.TimeKeeper time = new util.TimeKeeper("encoding");
+		DirectedGraph<Integer,DefaultEdge> rpg = encodeWToRPG(w);
+		time.stop();
 		System.out.println(rpg);
 	}
 }

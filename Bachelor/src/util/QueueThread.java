@@ -40,7 +40,7 @@ public abstract class QueueThread extends Thread {
 		for (int i = 0; i < excludes.length; i++){
 			cPrR.addClassExclusionFilter(excludes[i]);
 		}
-		cPrR.setSuspendPolicy(MethodEntryRequest.SUSPEND_ALL);
+		cPrR.setSuspendPolicy(ClassPrepareRequest.SUSPEND_ALL);
 		cPrR.enable();
 		
 		VMDeathRequest deathR = erm.createVMDeathRequest();
