@@ -15,6 +15,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 
 import tracing.*;
+import util.TimeKeeper;
 
 /**
  * An instance of this class loads a class file and executes the class found therein, collecting the TracePoints and finally replacing the TracePoints
@@ -30,6 +31,7 @@ public class Embedder {
 	private final String _args;
 	private final String _markMethodName;
 	private final String _className;
+	private TimeKeeper time;
 
 	/**
 	 * Constructs a new Embedder which executes a class and identifies its TracePoints.
@@ -43,6 +45,7 @@ public class Embedder {
 		_className = className;
 		_args = args;
 		_markMethodName = markMethodName;
+		time = new TimeKeeper("[blank]");
 	}
 	
 	/**
@@ -64,8 +67,10 @@ public class Embedder {
 	 */
 	public void dump(String watermarkClassName, int noOfBuildMethods) throws IOException{
 		classToClassCont = new HashMap<JavaClass,ClassContainer>();
+		time = new TimeKeeper("wmark call replacement");
 		setUpContainers(watermarkClassName, noOfBuildMethods);
 		processTracePoints(_classPath);
+		time.stop();
 	}
 	
 	/**
@@ -111,10 +116,12 @@ public class Embedder {
 			ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
 			cr.accept(cw, 0);
 			bytecode = cw.toByteArray();
+			time.pause();
 			//TODO: Get the actual path to the .class file as assuming they are all on one path may be wrong.				
 			OutputStream out = new FileOutputStream(classPath+File.separator+thisPackage+File.separator+thisClass+".class");
 			out.write(bytecode);
 			out.close();
+			time.resume();
 		}
 	}
 	

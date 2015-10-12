@@ -16,6 +16,7 @@ public class Tools {
 	 * @return The base-2 representation of <code>w</code>
 	 */
 	static int[] bitrep(long w){
+		// It's IMPORTANT to do floor()+1, not ceil() because otherwise, stuff like 52.00000000001 will get ceil'd to 52
 		int n = (int) Math.floor(Math.log((double)w) / Math.log(2.0))+1;
 		long rest = w;
 		int[] result = new int[n];

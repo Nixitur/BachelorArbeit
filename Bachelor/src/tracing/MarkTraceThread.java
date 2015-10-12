@@ -1,6 +1,5 @@
 package tracing;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -93,9 +92,11 @@ public class MarkTraceThread extends QueueThread {
 			} else {
 				throw new UnsupportedArgumentException("Argument is not of type int or java.lang.String");
 			}
-			System.out.println("---Entry "+loc.method().name()+"---");	
-			System.out.println("---Line: "+loc.codeIndex()+"---");
-			System.out.println(Arrays.toString(values.toArray()));
+			// For some unfathomable reason, the Methods don't get stored otherwise
+			loc.method();
+//			System.out.println("---Entry "+loc.method().name()+"---");	
+//			System.out.println("---Line: "+loc.codeIndex()+"---");
+//			System.out.println(Arrays.toString(values.toArray()));
 			if (tracePoints.contains(tracePoint)){
 				toBeDeleted.add(tracePoint);
 			} else {

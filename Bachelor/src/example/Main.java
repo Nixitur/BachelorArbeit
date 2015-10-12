@@ -39,11 +39,13 @@ public class Main {
 				System.out.println("No trace points hit. Try again.");
 				return;
 			}
-
+			int[] flipEdgeNumbers = parser.flipEdgeNumbers();
+			int deleteEdgeType = parser.deleteEdgeType();
+			int deleteEdgeNumber = parser.deleteEdgeNumber();
+			
 			time = new TimeKeeper("wmark creation");
 			embedding.WatermarkCreator wmark = new embedding.WatermarkCreator(fullClassName, graph, noOfTracePoints);
 			int noOfBuildMethods = wmark.create();
-			int[] flipEdgeNumbers = parser.flipEdgeNumbers();
 			for (int num : flipEdgeNumbers){
 				try {
 					wmark.edgeFlip(num);
@@ -51,8 +53,6 @@ public class Main {
 					// if this vertex can't be edge-flipped, just ignore it
 				}
 			}
-			int deleteEdgeType = parser.deleteEdgeType();
-			int deleteEdgeNumber = parser.deleteEdgeNumber();
 			if (deleteEdgeNumber > 0){
 				if (deleteEdgeType == ConfigParser.LIST_EDGE){
 					wmark.deleteListEdge(deleteEdgeNumber);
@@ -68,10 +68,8 @@ public class Main {
 				e.printStackTrace();
 			}
 			String wmarkClassName = wmark.getClassName();
-
-			time = new TimeKeeper("mark call replacement");
+			
 			embedder.dump(wmarkClassName, noOfBuildMethods);
-			time.stop();
 		}
 		if (args[0].equals("decode")){
 			Extractor ext = new Extractor(classPath, mainClass, arguments);
@@ -85,5 +83,6 @@ public class Main {
 			}
 			time.stop();
 		}
+		TimeKeeper.dump();
 	}
 }

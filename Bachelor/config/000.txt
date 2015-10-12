@@ -1,19 +1,19 @@
 # this default config only consists of program-irrelevant properties
 
 # the number to be encoded
-encodingNumber = 9223372036854775807
+encodingNumber = 6
 
 # use exactly "tree" or "list" for deleting a tree edge or a list edge respectively; anything else will lead to no deletion
-deleteEdgeType = list
+deleteEdgeType = nah
 
 # let n be the bitlength of the encoding number
 # list edges go from 1 to 2n+2
 # tree edges go from 1 to 2n+1
 # if the provided bounds are exceeded, the number will be ignored
-deleteEdgeNumber = 5
+deleteEdgeNumber = nope
 
 # for flipping edges; each must be between 1 and 2n+1 because both list and tree edge must exist; delimit by spaces " "
-flipEdgeNumbers = 2 5 34
+flipEdgeNumbers = 
 
 # the rest should be set in a program-specific config file
 

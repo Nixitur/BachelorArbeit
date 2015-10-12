@@ -81,10 +81,4 @@ public class Extractor {
 			return null;
 		}
 	}
-
-	public static void main(String[] args){
-		Extractor ext = new Extractor(".", "example.Example", "test");
-		Set<Set<Integer>> rootChildrenSets = ext.run();
-		System.out.println(rootChildrenSets);
-	}
 }

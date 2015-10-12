@@ -228,7 +228,7 @@ public class RepresentativeForest extends SimpleDirectedGraph<Integer, DefaultEd
 		for (Integer x : largeCopy){
 			// with a sibling z...
 			List<Integer> siblings = children.get(parent.get(x));
-			if (siblings.size() > 1){
+			if ((siblings != null) && (siblings.size() > 1)){
 				// then f is max(x,z)
 				return Collections.max(siblings);
 			}
